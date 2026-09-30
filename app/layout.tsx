@@ -14,30 +14,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgeNow — Track Everyone's Age",
+  title: "AgeBoard — Track Everyone's Age",
   description:
     "A simple private age tracker. Add birthdays and see everyone's current age at a glance.",
-  applicationName: "AgeNow",
+  applicationName: "AgeBoard",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AgeNow",
+    title: "AgeBoard",
   },
   icons: {
     icon: "/icon.svg",
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "AgeNow — Track Everyone's Age",
+    title: "AgeBoard — Track Everyone's Age",
     description:
       "A simple private age tracker. Add birthdays and see everyone's current age at a glance.",
     type: "website",
-    siteName: "AgeNow",
+    siteName: "AgeBoard",
   },
   twitter: {
     card: "summary",
-    title: "AgeNow — Track Everyone's Age",
+    title: "AgeBoard — Track Everyone's Age",
     description:
       "A simple private age tracker. Add birthdays and see everyone's current age at a glance.",
   },

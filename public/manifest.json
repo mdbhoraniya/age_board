@@ -1,7 +1,7 @@
 {
-  "name": "AgeNow — Track Everyone's Age",
-  "short_name": "AgeNow",
-  "description": "A simple, private age tracker. Add birthdays and see everyone's current age at a glance.",
+  "name": "AgeBoard",
+  "short_name": "AgeBoard",
+  "description": "A simple, private age tracker by mdbhoraniya. Add birthdays and see everyone's current age at a glance.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

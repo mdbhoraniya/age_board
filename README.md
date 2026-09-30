@@ -1,4 +1,4 @@
-# AgeNow — Track Everyone's Age
+# AgeBoard — Track Everyone's Age
 
 > A modern, responsive, privacy-first web application to track the dynamic ages of family members, children, parents, and friends.
 
@@ -112,7 +112,7 @@ age_board/
 
 ## 🧮 Calendar Calculation Architecture
 
-Instead of naive approximations like `(now - birth) / 365.25`, AgeNow implements calendar-accurate calendar math:
+Instead of naive approximations like `(now - birth) / 365.25`, AgeBoard implements calendar-accurate calendar math:
 
 1. **Date Parsing**: Parses `YYYY-MM-DD` strings into numerical `[year, month, day]` integers, avoiding UTC timezone rollbacks that occur with native `new Date("YYYY-MM-DD")`.
 2. **Calendar Borrowing**:

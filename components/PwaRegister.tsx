@@ -12,10 +12,10 @@ export function PwaRegister() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {
-          console.log('AgeNow ServiceWorker registered:', reg.scope);
+          console.log('AgeBoard ServiceWorker registered:', reg.scope);
         })
         .catch((err) => {
-          console.warn('AgeNow ServiceWorker registration failed:', err);
+          console.warn('AgeBoard ServiceWorker registration failed:', err);
         });
     }
   }, []);

@@ -1,5 +1,5 @@
-// AgeNow Minimalist Service Worker for PWA installability
-const CACHE_NAME = 'agenow-cache-v1';
+// AgeBoard Minimalist Service Worker for PWA installability
+const CACHE_NAME = 'ageboard-cache-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',

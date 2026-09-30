@@ -231,7 +231,7 @@ export default function Home() {
       <footer className="w-full border-t border-slate-200/80 dark:border-slate-800/80 py-6 px-4 text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
-            <strong>AgeNow</strong> — Private, instant age tracker.
+            <strong>AgeBoard</strong> — Private, instant age tracker.
           </p>
           <p className="flex items-center gap-1.5">
             <span>🛡️</span>

@@ -62,8 +62,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'AgeNow Family Ages',
-          text: `Here are the family member details on AgeNow (${filteredCount} people). Open the link to see everyone's current age:`,
+          title: 'AgeBoard Family Ages',
+          text: `Here are the family member details on AgeBoard (${filteredCount} people). Open the link to see everyone's current age:`,
           url: shareUrl,
         });
       } catch (err) {
@@ -87,7 +87,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `agenow_backup_${groupFilter ? groupFilter.toLowerCase().replace(/\s+/g, '_') : 'all'}.json`;
+    a.download = `ageboard_backup_${groupFilter ? groupFilter.toLowerCase().replace(/\s+/g, '_') : 'all'}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

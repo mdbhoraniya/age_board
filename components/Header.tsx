@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
               ⏳
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              AgeNow
+              AgeBoard
             </h1>
           </div>
           <p className="mt-1.5 text-base sm:text-lg text-slate-600 dark:text-slate-400 font-medium">
