@@ -82,9 +82,16 @@ export const PersonCard: React.FC<PersonCardProps> = ({
               <h3 className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {person.name}
               </h3>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Born {formattedDob}
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Born {formattedDob}
+                </p>
+                {person.group && (
+                  <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40">
+                    📁 {person.group}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

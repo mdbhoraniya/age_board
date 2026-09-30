@@ -7,14 +7,20 @@ import {
   savePeopleToStorage,
   generatePersonId,
   sortPeople,
+  getAllGroups,
+  decodeShareData,
+  mergePeople,
 } from '@/lib/storage';
 import { useCurrentDate } from '@/lib/useCurrentDate';
 import { Header } from '@/components/Header';
 import { PersonList } from '@/components/PersonList';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchAndSort } from '@/components/SearchAndSort';
+import { GroupFilter } from '@/components/GroupFilter';
 import { PersonFormModal } from '@/components/PersonFormModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
+import { ShareModal } from '@/components/ShareModal';
+import { ImportSharedModal } from '@/components/ImportSharedModal';
 
 export default function Home() {
   const currentDate = useCurrentDate();
@@ -24,10 +30,32 @@ export default function Home() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
-  // Search and Sort
+  // Group filter and Search/Sort
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('custom');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Shared payload received via link (?import=...)
+  const [sharedIncoming, setSharedIncoming] = useState<{
+    people: Person[];
+    groupName?: string;
+  } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const importData = params.get('import');
+      if (importData) {
+        const decoded = decodeShareData(importData);
+        if (decoded && decoded.people.length > 0) {
+          return decoded;
+        }
+      }
+    }
+    return null;
+  });
+
+  const allGroups = useMemo(() => getAllGroups(people), [people]);
 
   const handleOpenAdd = () => {
     setEditingPerson(null);
@@ -47,14 +75,16 @@ export default function Home() {
   const handleSavePerson = ({
     name,
     dateOfBirth,
+    group,
   }: {
     name: string;
     dateOfBirth: string;
+    group?: string;
   }) => {
     if (editingPerson) {
       // Edit existing
       const updated = people.map((p) =>
-        p.id === editingPerson.id ? { ...p, name, dateOfBirth } : p
+        p.id === editingPerson.id ? { ...p, name, dateOfBirth, group } : p
       );
       savePeopleToStorage(updated);
     } else {
@@ -63,6 +93,7 @@ export default function Home() {
         id: generatePersonId(),
         name,
         dateOfBirth,
+        group,
       };
       savePeopleToStorage([...people, newPerson]);
     }
@@ -93,9 +124,45 @@ export default function Home() {
     savePeopleToStorage(nextList);
   };
 
+  // Import workflows
+  const handleDismissImport = () => {
+    setSharedIncoming(null);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
+
+  const handleConfirmMerge = () => {
+    if (!sharedIncoming) return;
+    const { merged } = mergePeople(people, sharedIncoming.people);
+    savePeopleToStorage(merged);
+    if (sharedIncoming.groupName) {
+      setSelectedGroup(sharedIncoming.groupName);
+    }
+    handleDismissImport();
+  };
+
+  const handleConfirmReplace = () => {
+    if (!sharedIncoming) return;
+    savePeopleToStorage(sharedIncoming.people);
+    if (sharedIncoming.groupName) {
+      setSelectedGroup(sharedIncoming.groupName);
+    }
+    handleDismissImport();
+  };
+
+  const handleImportFromFile = (importedList: Person[]) => {
+    const { merged } = mergePeople(people, importedList);
+    savePeopleToStorage(merged);
+  };
+
   // Filter & sort list
   const processedPeople = useMemo(() => {
     let result = people;
+
+    if (selectedGroup) {
+      result = result.filter((p) => p.group === selectedGroup);
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -103,7 +170,7 @@ export default function Home() {
     }
 
     return sortPeople(result, sortOption, currentDate);
-  }, [people, searchQuery, sortOption, currentDate]);
+  }, [people, selectedGroup, searchQuery, sortOption, currentDate]);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
@@ -111,10 +178,11 @@ export default function Home() {
         <Header
           totalCount={people.length}
           onAddPerson={handleOpenAdd}
+          onOpenShare={() => setIsShareOpen(true)}
         />
 
         {!isHydrated ? (
-          // Sleek skeleton loading during hydration
+          // Skeleton loading during hydration
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-pulse">
             {[1, 2, 3].map((i) => (
               <div
@@ -125,12 +193,18 @@ export default function Home() {
           </div>
         ) : people.length === 0 ? (
           <div className="mt-4">
-            <EmptyState
-              onAddPerson={handleOpenAdd}
-            />
+            <EmptyState onAddPerson={handleOpenAdd} />
           </div>
         ) : (
           <div className="mt-2">
+            {/* Group Filter Tabs */}
+            <GroupFilter
+              groups={allGroups}
+              selectedGroup={selectedGroup}
+              onSelectGroup={setSelectedGroup}
+              people={people}
+            />
+
             <SearchAndSort
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -175,6 +249,7 @@ export default function Home() {
           onSave={handleSavePerson}
           initialData={editingPerson}
           currentDate={currentDate}
+          existingGroups={allGroups}
         />
       )}
 
@@ -185,6 +260,26 @@ export default function Home() {
         onClose={() => setPersonToDelete(null)}
         onConfirm={handleConfirmDelete}
       />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        people={people}
+        onImportFromFile={handleImportFromFile}
+      />
+
+      {/* Import Shared Link Modal */}
+      {sharedIncoming && (
+        <ImportSharedModal
+          isOpen={true}
+          incomingPeople={sharedIncoming.people}
+          groupName={sharedIncoming.groupName}
+          onClose={handleDismissImport}
+          onConfirmMerge={handleConfirmMerge}
+          onConfirmReplace={handleConfirmReplace}
+        />
+      )}
     </div>
   );
 }

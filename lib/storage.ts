@@ -13,6 +13,7 @@ export function isValidPersonObject(item: unknown): item is Person {
   if (typeof p.id !== 'string' || !p.id.trim()) return false;
   if (typeof p.name !== 'string' || !p.name.trim()) return false;
   if (typeof p.dateOfBirth !== 'string' || !p.dateOfBirth.trim()) return false;
+  if (p.group !== undefined && typeof p.group !== 'string') return false;
 
   // Validate the date format
   return parseDateParts(p.dateOfBirth) !== null;
@@ -44,6 +45,7 @@ export function loadPeopleFromStorage(): Person[] {
             id: item.id.trim(),
             name: item.name.trim(),
             dateOfBirth: item.dateOfBirth.trim(),
+            group: typeof item.group === 'string' && item.group.trim() ? item.group.trim() : undefined,
           });
         }
       }
@@ -172,4 +174,146 @@ export function sortPeople(
     default:
       return cloned;
   }
+}
+
+/**
+ * Returns a sorted unique list of all group names present in people.
+ */
+export function getAllGroups(people: Person[]): string[] {
+  const groupSet = new Set<string>();
+  for (const p of people) {
+    if (p.group && p.group.trim()) {
+      groupSet.add(p.group.trim());
+    }
+  }
+  return Array.from(groupSet).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Encodes people (optionally filtered by group) into a URL-safe Base64 string for sharing.
+ */
+export function encodeShareData(people: Person[], groupFilter?: string): string {
+  const filtered = groupFilter
+    ? people.filter((p) => p.group === groupFilter)
+    : people;
+
+  const payload = {
+    v: 1,
+    sharedAt: new Date().toISOString(),
+    group: groupFilter || null,
+    people: filtered.map((p) => ({
+      name: p.name,
+      dateOfBirth: p.dateOfBirth,
+      group: p.group || undefined,
+    })),
+  };
+
+  const json = JSON.stringify(payload);
+  // URL-safe base64 using TextEncoder
+  const binString = Array.from(new TextEncoder().encode(json), (byte) =>
+    String.fromCharCode(byte)
+  ).join('');
+  return encodeURIComponent(btoa(binString));
+}
+
+/**
+ * Decodes a shared Base64 string back into valid Person objects.
+ */
+export function decodeShareData(encodedStr: string): {
+  people: Person[];
+  groupName?: string;
+} | null {
+  try {
+    const unencoded = decodeURIComponent(encodedStr);
+    const binString = atob(unencoded);
+    const bytes = Uint8Array.from(binString, (m) => m.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(json);
+
+    let rawList: unknown[] = [];
+    let groupName: string | undefined = undefined;
+
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.people)) {
+        rawList = parsed.people;
+        if (typeof parsed.group === 'string' && parsed.group.trim()) {
+          groupName = parsed.group.trim();
+        }
+      } else if (Array.isArray(parsed)) {
+        rawList = parsed;
+      }
+    }
+
+    const validPeople: Person[] = [];
+    for (const item of rawList) {
+      if (item && typeof item === 'object') {
+        const candidate = item as Partial<Person>;
+        if (
+          typeof candidate.name === 'string' &&
+          candidate.name.trim() &&
+          typeof candidate.dateOfBirth === 'string' &&
+          parseDateParts(candidate.dateOfBirth) !== null
+        ) {
+          validPeople.push({
+            id: generatePersonId(),
+            name: candidate.name.trim(),
+            dateOfBirth: candidate.dateOfBirth.trim(),
+            group:
+              typeof candidate.group === 'string' && candidate.group.trim()
+                ? candidate.group.trim()
+                : groupName || undefined,
+          });
+        }
+      }
+    }
+
+    if (validPeople.length === 0) return null;
+
+    return { people: validPeople, groupName };
+  } catch (error) {
+    console.error('Failed to decode shared data:', error);
+    return null;
+  }
+}
+
+/**
+ * Merges incoming shared people with existing people without duplicating
+ * individuals who share the exact same name and date of birth.
+ */
+export function mergePeople(
+  existing: Person[],
+  incoming: Person[]
+): { merged: Person[]; addedCount: number; updatedCount: number } {
+  const merged = [...existing];
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  for (const item of incoming) {
+    // Check if an existing person has the exact same name (case-insensitive) and DOB
+    const matchIndex = merged.findIndex(
+      (p) =>
+        p.name.toLowerCase().trim() === item.name.toLowerCase().trim() &&
+        p.dateOfBirth === item.dateOfBirth
+    );
+
+    if (matchIndex >= 0) {
+      // If matched and incoming has a group while existing doesn't, update the group
+      if (item.group && !merged[matchIndex].group) {
+        merged[matchIndex] = {
+          ...merged[matchIndex],
+          group: item.group,
+        };
+        updatedCount++;
+      }
+    } else {
+      // Add as new person with fresh ID
+      merged.push({
+        ...item,
+        id: generatePersonId(),
+      });
+      addedCount++;
+    }
+  }
+
+  return { merged, addedCount, updatedCount };
 }

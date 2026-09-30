@@ -16,6 +16,9 @@
   - Age (Oldest first / Youngest first)
   - Alphabetical by name (A → Z / Z → A)
   - Instant live search by name
+- **Family & Custom Groups**: Organize people into custom groups (e.g. "My Family", "Brother's Family", "Parents") with instant group filter tabs.
+- **1-Click Sharing (No Re-entry)**: Generate instant share links for all members or specific groups. When your brother or family member opens the link, they can import everyone with 1 click without typing anything.
+- **Backup & Restore**: Export full family data as `.json` backups and import them anytime on any device.
 - **Progressive Web App (PWA)**: Installable on Android (via Chrome "Add to Home Screen"), iOS (Safari "Add to Home Screen"), and desktop browsers as a standalone application.
 - **Responsive Mobile-First Design**: Optimized for 320px, 375px, 430px, tablets, and desktop displays with 44px+ touch targets and dark mode support.
 

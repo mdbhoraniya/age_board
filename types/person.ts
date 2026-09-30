@@ -2,6 +2,7 @@ export type Person = {
   id: string;
   name: string;
   dateOfBirth: string; // YYYY-MM-DD
+  group?: string; // e.g. "My Family", "Brother's Family"
 };
 
 export type AgeResult = {

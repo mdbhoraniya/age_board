@@ -5,9 +5,14 @@ import React from 'react';
 type HeaderProps = {
   totalCount: number;
   onAddPerson: () => void;
+  onOpenShare: () => void;
 };
 
-export const Header: React.FC<HeaderProps> = ({ totalCount, onAddPerson }) => {
+export const Header: React.FC<HeaderProps> = ({
+  totalCount,
+  onAddPerson,
+  onOpenShare,
+}) => {
   return (
     <header className="pt-8 pb-6 sm:pt-10 sm:pb-8">
       {/* Top bar with Privacy Indicator */}
@@ -40,12 +45,23 @@ export const Header: React.FC<HeaderProps> = ({ totalCount, onAddPerson }) => {
           </p>
         </div>
 
-        {/* Action Button */}
-        <div>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5">
+          {totalCount > 0 && (
+            <button
+              type="button"
+              onClick={onOpenShare}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
+            >
+              <span>📤</span>
+              <span>Share</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onAddPerson}
-            className="inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-98 transition-all"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-98 transition-all"
           >
             <span className="text-lg font-bold leading-none">+</span>
             <span>Add Person</span>

@@ -11,9 +11,10 @@ import {
 type PersonFormModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (personData: { name: string; dateOfBirth: string }) => void;
+  onSave: (personData: { name: string; dateOfBirth: string; group?: string }) => void;
   initialData?: Person | null;
   currentDate: Date;
+  existingGroups?: string[];
 };
 
 export const PersonFormModal: React.FC<PersonFormModalProps> = ({
@@ -22,9 +23,11 @@ export const PersonFormModal: React.FC<PersonFormModalProps> = ({
   onSave,
   initialData,
   currentDate,
+  existingGroups = [],
 }) => {
   const [name, setName] = useState(initialData?.name ?? '');
   const [dateOfBirth, setDateOfBirth] = useState(initialData?.dateOfBirth ?? '');
+  const [group, setGroup] = useState(initialData?.group ?? '');
   const [errors, setErrors] = useState<{ name?: string; dateOfBirth?: string }>({});
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +85,7 @@ export const PersonFormModal: React.FC<PersonFormModalProps> = ({
     onSave({
       name: trimmedName,
       dateOfBirth,
+      group: group.trim() || undefined,
     });
     onClose();
   };
@@ -107,7 +111,7 @@ export const PersonFormModal: React.FC<PersonFormModalProps> = ({
               {initialData ? 'Edit Person' : 'Add Person'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {initialData ? 'Update their name or date of birth' : 'Add someone to track their current age'}
+              {initialData ? 'Update their name, date of birth or group' : 'Add someone to track their current age'}
             </p>
           </div>
           <button
@@ -149,6 +153,51 @@ export const PersonFormModal: React.FC<PersonFormModalProps> = ({
             />
             {errors.name && (
               <p className="mt-1 text-xs text-rose-500 font-medium">{errors.name}</p>
+            )}
+          </div>
+
+          {/* Group field */}
+          <div>
+            <label
+              htmlFor="person-group"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+            >
+              Group / Family (Optional)
+            </label>
+            <input
+              id="person-group"
+              list="group-suggestions"
+              type="text"
+              placeholder="e.g. My Family, Brother's Family, Parents"
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-sm bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white transition-colors focus:border-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            />
+            <datalist id="group-suggestions">
+              {existingGroups.map((g) => (
+                <option key={g} value={g} />
+              ))}
+            </datalist>
+
+            {/* Quick chips if existing groups exist */}
+            {existingGroups.length > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] text-slate-400">Suggestions:</span>
+                {existingGroups.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGroup(g)}
+                    className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
+                      group.trim() === g
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

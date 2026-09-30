@@ -4,6 +4,10 @@ import {
   isValidPersonObject,
   sortPeople,
   generatePersonId,
+  getAllGroups,
+  encodeShareData,
+  decodeShareData,
+  mergePeople,
 } from '../lib/storage';
 import { Person } from '../types/person';
 
@@ -80,5 +84,63 @@ describe('Storage & Data Validation', () => {
       'November Birthday',
       'August Passed',
     ]);
+  });
+
+  test('Group validation and getAllGroups', () => {
+    const people: Person[] = [
+      { id: '1', name: 'Alice', dateOfBirth: '2020-01-01', group: 'My Family' },
+      { id: '2', name: 'Bob', dateOfBirth: '2018-05-15', group: "Brother's Family" },
+      { id: '3', name: 'Charlie', dateOfBirth: '2015-08-20', group: 'My Family' },
+      { id: '4', name: 'Dave', dateOfBirth: '2010-12-05' }, // No group
+    ];
+
+    assert.equal(isValidPersonObject(people[0]), true);
+    assert.equal(isValidPersonObject({ ...people[0], group: 123 as unknown as string }), false);
+
+    const groups = getAllGroups(people);
+    assert.deepEqual(groups, ["Brother's Family", 'My Family']);
+  });
+
+  test('encodeShareData and decodeShareData roundtrip', () => {
+    const people: Person[] = [
+      { id: '1', name: 'Alice', dateOfBirth: '2020-01-01', group: 'My Family' },
+      { id: '2', name: 'Bob', dateOfBirth: '2018-05-15', group: "Brother's Family" },
+    ];
+
+    // Encode all
+    const encodedAll = encodeShareData(people);
+    const decodedAll = decodeShareData(encodedAll);
+    assert.ok(decodedAll);
+    assert.equal(decodedAll?.people.length, 2);
+    assert.equal(decodedAll?.people[0].name, 'Alice');
+    assert.equal(decodedAll?.people[1].name, 'Bob');
+
+    // Encode filtered by group
+    const encodedBro = encodeShareData(people, "Brother's Family");
+    const decodedBro = decodeShareData(encodedBro);
+    assert.ok(decodedBro);
+    assert.equal(decodedBro?.groupName, "Brother's Family");
+    assert.equal(decodedBro?.people.length, 1);
+    assert.equal(decodedBro?.people[0].name, 'Bob');
+  });
+
+  test('mergePeople handles duplicates and preserves existing records', () => {
+    const existing: Person[] = [
+      { id: 'p1', name: 'Alice', dateOfBirth: '2020-01-01', group: 'My Family' },
+    ];
+
+    const incoming: Person[] = [
+      // Duplicate person (same name & DOB)
+      { id: 'temp-1', name: 'Alice', dateOfBirth: '2020-01-01' },
+      // New person
+      { id: 'temp-2', name: 'Bob', dateOfBirth: '2018-05-15', group: "Brother's Family" },
+    ];
+
+    const result = mergePeople(existing, incoming);
+    assert.equal(result.merged.length, 2);
+    assert.equal(result.addedCount, 1);
+    assert.equal(result.merged[0].name, 'Alice');
+    assert.equal(result.merged[1].name, 'Bob');
+    assert.equal(result.merged[1].group, "Brother's Family");
   });
 });
