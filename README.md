@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgeNow — Track Everyone's Age
 
-## Getting Started
+> A modern, responsive, privacy-first web application to track the dynamic ages of family members, children, parents, and friends.
 
-First, run the development server:
+---
+
+## 🌟 Key Features
+
+- **Accurate Calendar Age Calculation**: Calculates exact years, months, and days with calendar precision — properly accounting for leap years, February 29th birthdays, variable month lengths, and month-end dates.
+- **Dynamic Age & Birthday Updates**: Automatically updates calculated ages when the calendar date rolls over at midnight or when returning to the tab, with zero high-frequency polling or battery drain.
+- **100% Private & On-Device**: All dates of birth remain strictly on the user's device in browser `localStorage`. No accounts, no servers, no tracking.
+- **Upcoming Birthday Countdowns**: Highlights birthdays today (`🎉 Birthday today!`) and shows countdowns for upcoming birthdays (`🎂 In 12 days`, `🎂 In 3 months`).
+- **Flexible Sorting & Search**:
+  - Custom order (with reorder controls)
+  - Upcoming birthday countdown
+  - Age (Oldest first / Youngest first)
+  - Alphabetical by name (A → Z / Z → A)
+  - Instant live search by name
+- **Progressive Web App (PWA)**: Installable on Android (via Chrome "Add to Home Screen"), iOS (Safari "Add to Home Screen"), and desktop browsers as a standalone application.
+- **Responsive Mobile-First Design**: Optimized for 320px, 375px, 430px, tablets, and desktop displays with 44px+ touch targets and dark mode support.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 20.x or higher
+- npm 10.x or higher
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+```
+
+### Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Create optimized production build
+npm run build
 
-## Learn More
+# Start production server
+npm run start
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Running Tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Runs 27 comprehensive automated tests covering calendar calculations, leap year handling, singular/plural formatting, storage integrity, sorting, and user workflows.
 
-## Deploy on Vercel
+### Linting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📐 Project Structure
+
+```text
+age_board/
+├── app/
+│   ├── layout.tsx         # Root layout with SEO metadata & PWA tags
+│   ├── page.tsx           # Main dashboard page
+│   └── globals.css        # Tailwind CSS and theme design tokens
+├── components/
+│   ├── DeleteConfirmModal.tsx # Safe deletion confirmation dialog
+│   ├── EmptyState.tsx         # Attractive empty state with Add Person action
+│   ├── Header.tsx             # Brand header, privacy indicator, Add CTA
+│   ├── PersonCard.tsx         # Age card with big numbers & birthday status
+│   ├── PersonFormModal.tsx    # Add / Edit modal with live age preview
+│   ├── PersonList.tsx         # Responsive card grid with reordering
+│   ├── PwaRegister.tsx        # Client PWA service worker registration
+│   └── SearchAndSort.tsx      # Name search filter and sort dropdown
+├── lib/
+│   ├── age.ts             # Calendar math, birthday countdowns, formatting
+│   ├── storage.ts         # Safe localStorage persistence & usePeople hook
+│   └── useCurrentDate.ts  # Midnight-anchored live date synchronization
+├── types/
+│   └── person.ts          # Person, AgeResult, BirthdayInfo types
+├── public/
+│   ├── manifest.json      # PWA web manifest
+│   ├── sw.js              # Minimalist PWA service worker
+│   ├── icon.svg           # High-resolution vector app icon
+│   ├── icon-192.png       # 192x192 PWA icon
+│   ├── icon-512.png       # 512x512 PWA icon
+│   └── apple-touch-icon.png
+└── tests/
+    ├── age.test.ts        # Unit tests for calendar accuracy & edge cases
+    ├── storage.test.ts    # Tests for local storage and sorting
+    └── integration.test.ts # End-to-end integration workflow tests
+```
+
+---
+
+## 🧮 Calendar Calculation Architecture
+
+Instead of naive approximations like `(now - birth) / 365.25`, AgeNow implements calendar-accurate calendar math:
+
+1. **Date Parsing**: Parses `YYYY-MM-DD` strings into numerical `[year, month, day]` integers, avoiding UTC timezone rollbacks that occur with native `new Date("YYYY-MM-DD")`.
+2. **Calendar Borrowing**:
+   - `years = curYear - birthYear`
+   - `months = curMonth - birthMonth`
+   - `days = curDay - birthDay`
+   - If `days < 0`: borrows the exact number of days from the previous month (`new Date(curYear, curMonth - 1, 0).getDate()`), decrementing `months`.
+   - If `months < 0`: borrows 12 months, decrementing `years`.
+3. **Feb 29 & Leap Years**:
+   - Properly accounts for leap years (`year % 4 === 0 && year % 100 !== 0 || year % 400 === 0`).
+   - For people born on Feb 29, birthdays in non-leap years are celebrated on Feb 28.
+4. **Natural Grammar Formatting**:
+   - Formats `1 year` vs `2 years`, `1 month` vs `2 months`, `1 day` vs `2 days`.
+   - Omit zero units when appropriate (`10 years old`, `10 years, 1 day`, `5 months, 12 days`).
