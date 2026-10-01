@@ -1,13 +1,16 @@
 'use client';
 
 import React from 'react';
-import { SortOption } from '@/types/person';
+import { SortOption, LayoutView } from '@/types/person';
+import { ViewToggle } from './ViewToggle';
 
 type SearchAndSortProps = {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   sortOption: SortOption;
   onSortChange: (option: SortOption) => void;
+  layoutView: LayoutView;
+  onLayoutViewChange: (view: LayoutView) => void;
   showSearch: boolean;
 };
 
@@ -16,6 +19,8 @@ export const SearchAndSort: React.FC<SearchAndSortProps> = ({
   onSearchChange,
   sortOption,
   onSortChange,
+  layoutView,
+  onLayoutViewChange,
   showSearch,
 }) => {
   return (
@@ -48,27 +53,33 @@ export const SearchAndSort: React.FC<SearchAndSortProps> = ({
         <div />
       )}
 
-      {/* Sort Options */}
-      <div className="flex items-center gap-2 self-end sm:self-auto">
-        <label
-          htmlFor="sort-select"
-          className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap"
-        >
-          Sort by:
-        </label>
-        <select
-          id="sort-select"
-          value={sortOption}
-          onChange={(e) => onSortChange(e.target.value as SortOption)}
-          className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-hidden"
-        >
-          <option value="custom">Custom Order</option>
-          <option value="birthday-soon">🎂 Upcoming Birthday</option>
-          <option value="age-desc">⏳ Age (Oldest first)</option>
-          <option value="age-asc">👶 Age (Youngest first)</option>
-          <option value="name-asc">Name (A → Z)</option>
-          <option value="name-desc">Name (Z → A)</option>
-        </select>
+      {/* Controls Right: View Toggle + Sort Dropdown */}
+      <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
+        {/* Layout Toggle */}
+        <ViewToggle view={layoutView} onViewChange={onLayoutViewChange} />
+
+        {/* Sort Options */}
+        <div className="flex items-center gap-1.5">
+          <label
+            htmlFor="sort-select"
+            className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:inline"
+          >
+            Sort:
+          </label>
+          <select
+            id="sort-select"
+            value={sortOption}
+            onChange={(e) => onSortChange(e.target.value as SortOption)}
+            className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:border-blue-500 focus:outline-hidden"
+          >
+            <option value="custom">Custom Order</option>
+            <option value="birthday-soon">🎂 Upcoming Birthday</option>
+            <option value="age-desc">⏳ Age (Oldest)</option>
+            <option value="age-asc">👶 Age (Youngest)</option>
+            <option value="name-asc">Name (A → Z)</option>
+            <option value="name-desc">Name (Z → A)</option>
+          </select>
+        </div>
       </div>
     </div>
   );

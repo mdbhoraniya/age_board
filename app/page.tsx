@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Person, SortOption } from '@/types/person';
+import { Person, SortOption, LayoutView } from '@/types/person';
 import {
   usePeople,
   savePeopleToStorage,
@@ -21,6 +21,7 @@ import { PersonFormModal } from '@/components/PersonFormModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
+import { WidgetModal } from '@/components/WidgetModal';
 
 export default function Home() {
   const currentDate = useCurrentDate();
@@ -31,6 +32,18 @@ export default function Home() {
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isWidgetOpen, setIsWidgetOpen] = useState(false);
+
+  // Layout View preference (Grid, Compact, Timeline)
+  const [layoutView, setLayoutView] = useState<LayoutView>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ageboard_layout_view');
+      if (saved === 'grid' || saved === 'compact' || saved === 'timeline') {
+        return saved;
+      }
+    }
+    return 'grid';
+  });
 
   // Group filter and Search/Sort
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -70,6 +83,13 @@ export default function Home() {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingPerson(null);
+  };
+
+  const handleLayoutViewChange = (newView: LayoutView) => {
+    setLayoutView(newView);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ageboard_layout_view', newView);
+    }
   };
 
   const handleSavePerson = ({
@@ -179,6 +199,7 @@ export default function Home() {
           totalCount={people.length}
           onAddPerson={handleOpenAdd}
           onOpenShare={() => setIsShareOpen(true)}
+          onOpenWidget={() => setIsWidgetOpen(true)}
         />
 
         {!isHydrated ? (
@@ -210,6 +231,8 @@ export default function Home() {
               onSearchChange={setSearchQuery}
               sortOption={sortOption}
               onSortChange={setSortOption}
+              layoutView={layoutView}
+              onLayoutViewChange={handleLayoutViewChange}
               showSearch={people.length >= 3 || searchQuery.length > 0}
             />
 
@@ -217,6 +240,7 @@ export default function Home() {
               people={processedPeople}
               currentDate={currentDate}
               sortOption={sortOption}
+              layoutView={layoutView}
               searchQuery={searchQuery}
               onEdit={handleOpenEdit}
               onDelete={setPersonToDelete}
@@ -267,6 +291,14 @@ export default function Home() {
         onClose={() => setIsShareOpen(false)}
         people={people}
         onImportFromFile={handleImportFromFile}
+      />
+
+      {/* Home Screen Widgets Modal */}
+      <WidgetModal
+        isOpen={isWidgetOpen}
+        onClose={() => setIsWidgetOpen(false)}
+        people={people}
+        currentDate={currentDate}
       />
 
       {/* Import Shared Link Modal */}

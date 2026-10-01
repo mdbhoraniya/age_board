@@ -16,6 +16,9 @@
   - Age (Oldest first / Youngest first)
   - Alphabetical by name (A → Z / Z → A)
   - Instant live search by name
+- **Display Layout Toggle**: Switch seamlessly between **Cards Grid**, **Compact List**, and **Calendar Timeline** (organized Jan → Dec) layouts, persisted automatically.
+- **Generational Badges**: Automatic generational tagging (*Gen Alpha*, *Gen Z*, *Millennial*, *Gen X*, *Baby Boomer*, *Silent Gen*) on every person.
+- **Home Screen Widgets**: PWA Widget support with an interactive simulator and dedicated standalone mini-widget route (`/widget`).
 - **Family & Custom Groups**: Organize people into custom groups (e.g. "My Family", "Brother's Family", "Parents") with instant group filter tabs.
 - **1-Click Sharing (No Re-entry)**: Generate instant share links for all members or specific groups. When your brother or family member opens the link, they can import everyone with 1 click without typing anything.
 - **Backup & Restore**: Export full family data as `.json` backups and import them anytime on any device.

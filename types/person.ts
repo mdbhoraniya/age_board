@@ -29,3 +29,14 @@ export type SortOption =
   | 'age-desc'
   | 'age-asc'
   | 'birthday-soon';
+
+export type LayoutView = 'grid' | 'compact' | 'timeline';
+
+export type GenerationInfo = {
+  name: string;
+  shortName: string;
+  yearsRange: string;
+  colorClass: string;
+  bgClass: string;
+  borderClass: string;
+};

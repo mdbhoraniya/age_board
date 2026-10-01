@@ -6,12 +6,14 @@ type HeaderProps = {
   totalCount: number;
   onAddPerson: () => void;
   onOpenShare: () => void;
+  onOpenWidget: () => void;
 };
 
 export const Header: React.FC<HeaderProps> = ({
   totalCount,
   onAddPerson,
   onOpenShare,
+  onOpenWidget,
 }) => {
   return (
     <header className="pt-8 pb-6 sm:pt-10 sm:pb-8">
@@ -46,16 +48,28 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {totalCount > 0 && (
-            <button
-              type="button"
-              onClick={onOpenShare}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
-            >
-              <span>📤</span>
-              <span>Share</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onOpenWidget}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
+                title="Home Screen Widgets Setup & Preview"
+              >
+                <span>📱</span>
+                <span className="hidden sm:inline">Widgets</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenShare}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
+              >
+                <span>📤</span>
+                <span className="hidden sm:inline">Share</span>
+              </button>
+            </>
           )}
 
           <button

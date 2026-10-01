@@ -7,6 +7,7 @@ import {
   formatDateDisplay,
   validateDateOfBirth,
   isLeapYear,
+  getGeneration,
 } from '../lib/age';
 
 describe('Age Calculation - Calendar Accuracy', () => {
@@ -181,5 +182,15 @@ describe('Age Calculation - Calendar Accuracy', () => {
     assert.equal(validateDateOfBirth('invalid-date', today).isValid, false);
     assert.equal(validateDateOfBirth('2026-02-30', today).isValid, false); // invalid day
     assert.equal(validateDateOfBirth('2016-01-10', today).isValid, true);
+  });
+
+  test('Generational classification', () => {
+    assert.equal(getGeneration('2020-05-10')?.shortName, 'Gen Alpha');
+    assert.equal(getGeneration('2005-08-20')?.shortName, 'Gen Z');
+    assert.equal(getGeneration('1990-11-15')?.shortName, 'Millennial');
+    assert.equal(getGeneration('1975-03-30')?.shortName, 'Gen X');
+    assert.equal(getGeneration('1955-07-04')?.shortName, 'Boomer');
+    assert.equal(getGeneration('1935-02-14')?.shortName, 'Silent Gen');
+    assert.equal(getGeneration('1915-09-01')?.shortName, 'Greatest Gen');
   });
 });

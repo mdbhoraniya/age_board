@@ -7,6 +7,7 @@ import {
   calculateBirthdayInfo,
   formatAge,
   formatDateDisplay,
+  getGeneration,
 } from '@/lib/age';
 
 type PersonCardProps = {
@@ -36,6 +37,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
   const bdayInfo = calculateBirthdayInfo(person.dateOfBirth, currentDate);
   const formattedDob = formatDateDisplay(person.dateOfBirth);
   const ageSummary = formatAge(age);
+  const generation = getGeneration(person.dateOfBirth);
 
   // Avatar initial color generator based on person's name
   const getAvatarGradient = (name: string) => {
@@ -89,6 +91,14 @@ export const PersonCard: React.FC<PersonCardProps> = ({
                 {person.group && (
                   <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40">
                     📁 {person.group}
+                  </span>
+                )}
+                {generation && (
+                  <span
+                    title={`${generation.name} (${generation.yearsRange})`}
+                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${generation.bgClass} ${generation.colorClass} ${generation.borderClass}`}
+                  >
+                    {generation.shortName}
                   </span>
                 )}
               </div>

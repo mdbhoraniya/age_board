@@ -1,4 +1,4 @@
-import { AgeResult, BirthdayInfo } from '@/types/person';
+import { AgeResult, BirthdayInfo, GenerationInfo } from '@/types/person';
 
 /**
  * Checks if a given year is a leap year.
@@ -308,5 +308,83 @@ export function calculateBirthdayInfo(
     turningAge,
     formattedCountdown,
     formattedNextDate,
+  };
+}
+
+/**
+ * Determines the generation of a person based on their birth year.
+ */
+export function getGeneration(dateOfBirth: string): GenerationInfo | null {
+  const parts = parseDateParts(dateOfBirth);
+  if (!parts) return null;
+  const [year] = parts;
+
+  if (year >= 2013) {
+    return {
+      name: 'Generation Alpha',
+      shortName: 'Gen Alpha',
+      yearsRange: '2013 – Present',
+      colorClass: 'text-purple-700 dark:text-purple-300',
+      bgClass: 'bg-purple-50 dark:bg-purple-950/50',
+      borderClass: 'border-purple-200 dark:border-purple-800/60',
+    };
+  }
+  if (year >= 1997) {
+    return {
+      name: 'Generation Z',
+      shortName: 'Gen Z',
+      yearsRange: '1997 – 2012',
+      colorClass: 'text-cyan-700 dark:text-cyan-300',
+      bgClass: 'bg-cyan-50 dark:bg-cyan-950/50',
+      borderClass: 'border-cyan-200 dark:border-cyan-800/60',
+    };
+  }
+  if (year >= 1981) {
+    return {
+      name: 'Millennial',
+      shortName: 'Millennial',
+      yearsRange: '1981 – 1996',
+      colorClass: 'text-emerald-700 dark:text-emerald-300',
+      bgClass: 'bg-emerald-50 dark:bg-emerald-950/50',
+      borderClass: 'border-emerald-200 dark:border-emerald-800/60',
+    };
+  }
+  if (year >= 1965) {
+    return {
+      name: 'Generation X',
+      shortName: 'Gen X',
+      yearsRange: '1965 – 1980',
+      colorClass: 'text-amber-700 dark:text-amber-300',
+      bgClass: 'bg-amber-50 dark:bg-amber-950/50',
+      borderClass: 'border-amber-200 dark:border-amber-800/60',
+    };
+  }
+  if (year >= 1946) {
+    return {
+      name: 'Baby Boomer',
+      shortName: 'Boomer',
+      yearsRange: '1946 – 1964',
+      colorClass: 'text-rose-700 dark:text-rose-300',
+      bgClass: 'bg-rose-50 dark:bg-rose-950/50',
+      borderClass: 'border-rose-200 dark:border-rose-800/60',
+    };
+  }
+  if (year >= 1928) {
+    return {
+      name: 'Silent Generation',
+      shortName: 'Silent Gen',
+      yearsRange: '1928 – 1945',
+      colorClass: 'text-indigo-700 dark:text-indigo-300',
+      bgClass: 'bg-indigo-50 dark:bg-indigo-950/50',
+      borderClass: 'border-indigo-200 dark:border-indigo-800/60',
+    };
+  }
+  return {
+    name: 'Greatest Generation',
+    shortName: 'Greatest Gen',
+    yearsRange: '1901 – 1927',
+    colorClass: 'text-slate-700 dark:text-slate-300',
+    bgClass: 'bg-slate-100 dark:bg-slate-800',
+    borderClass: 'border-slate-200 dark:border-slate-700',
   };
 }
