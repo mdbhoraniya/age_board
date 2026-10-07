@@ -22,7 +22,12 @@ import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
 import { DocumentVaultModal } from '@/components/DocumentVaultModal';
-import { useDocumentCounts, deleteDocumentsForPerson } from '@/lib/documentStorage';
+import { PersonDocument } from '@/types/document';
+import {
+  useDocumentCounts,
+  deleteDocumentsForPerson,
+  importDocumentsWithMapping,
+} from '@/lib/documentStorage';
 
 export default function Home() {
   const currentDate = useCurrentDate();
@@ -175,9 +180,27 @@ export default function Home() {
     handleDismissImport();
   };
 
-  const handleImportFromFile = (importedList: Person[]) => {
-    const { merged } = mergePeople(people, importedList);
+  const handleImportFromFile = async (
+    importedList: Person[],
+    importedDocs?: PersonDocument[]
+  ) => {
+    const { merged, idMap } = mergePeople(people, importedList);
     savePeopleToStorage(merged);
+
+    let docCount = 0;
+    if (importedDocs && importedDocs.length > 0) {
+      docCount = await importDocumentsWithMapping(importedDocs, idMap);
+    }
+
+    if (docCount > 0) {
+      alert(
+        `Successfully restored backup!\n• Added/updated ${importedList.length} family member${importedList.length === 1 ? '' : 's'}\n• Restored ${docCount} attached document${docCount === 1 ? '' : 's'} into your local vault`
+      );
+    } else {
+      alert(
+        `Successfully restored ${importedList.length} family member${importedList.length === 1 ? '' : 's'}.`
+      );
+    }
   };
 
   // Filter & sort list

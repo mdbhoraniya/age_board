@@ -61,4 +61,25 @@ describe('Document Vault & Metadata Tests', () => {
     const invalidDoc = getExpiryStatus('not-a-date', refDate);
     assert.equal(invalidDoc.status, 'none');
   });
+
+  test('mergePeople generates consistent idMap for document remapping on import', () => {
+    const { mergePeople } = require('../lib/storage');
+    const existing = [
+      { id: 'local-1', name: 'John Doe', dateOfBirth: '1985-04-12' },
+    ];
+    const incoming = [
+      // Matches existing John Doe
+      { id: 'remote-1', name: 'John Doe', dateOfBirth: '1985-04-12' },
+      // New person Jane Doe
+      { id: 'remote-2', name: 'Jane Doe', dateOfBirth: '1990-08-20' },
+    ];
+
+    const result = mergePeople(existing, incoming);
+    assert.equal(result.merged.length, 2);
+    assert.equal(result.idMap['remote-1'], 'local-1');
+    assert.ok(result.idMap['remote-2']);
+    assert.notEqual(result.idMap['remote-2'], 'remote-2'); // Assigned fresh ID
+    assert.equal(result.idMap['remote-2'], result.merged[1].id);
+  });
 });
+

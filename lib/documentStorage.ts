@@ -231,6 +231,83 @@ export async function getDocumentCounts(): Promise<Record<string, number>> {
 }
 
 /**
+ * Get all stored documents across all people.
+ */
+export async function getAllDocuments(): Promise<PersonDocument[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve((request.result as PersonDocument[]) || []);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Import documents from a backup file, remapping their personId according to idMap.
+ */
+export async function importDocumentsWithMapping(
+  docs: PersonDocument[],
+  idMap?: Record<string, string>
+): Promise<number> {
+  if (!Array.isArray(docs) || docs.length === 0) return 0;
+  try {
+    const db = await openDB();
+    const existingDocs = await getAllDocuments();
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      let importedCount = 0;
+
+      for (const item of docs) {
+        if (!item || !item.dataUrl || !item.personId) continue;
+
+        // Resolve personId if remapped during people merge
+        const resolvedPersonId = (idMap && idMap[item.personId]) ? idMap[item.personId] : item.personId;
+
+        // Check if an identical document already exists for this person to avoid duplicates
+        const isDuplicate = existingDocs.some(
+          (ed) =>
+            ed.personId === resolvedPersonId &&
+            ed.fileName === item.fileName &&
+            ed.title === item.title &&
+            ed.fileSize === item.fileSize
+        );
+
+        if (!isDuplicate) {
+          const docToSave: PersonDocument = {
+            ...item,
+            id: generateDocumentId(),
+            personId: resolvedPersonId,
+            updatedAt: new Date().toISOString(),
+          };
+          store.put(docToSave);
+          importedCount++;
+        }
+      }
+
+      tx.oncomplete = () => {
+        if (importedCount > 0) notifyChange();
+        resolve(importedCount);
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (error) {
+    console.error('Failed to import documents from backup:', error);
+    return 0;
+  }
+}
+
+/**
  * React hook that returns reactive document counts for each person.
  */
 export function useDocumentCounts(): Record<string, number> {
@@ -258,3 +335,4 @@ export function useDocumentCounts(): Record<string, number> {
 
   return counts;
 }
+
