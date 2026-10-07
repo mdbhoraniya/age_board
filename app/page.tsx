@@ -21,7 +21,6 @@ import { PersonFormModal } from '@/components/PersonFormModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
-import { WidgetModal } from '@/components/WidgetModal';
 
 export default function Home() {
   const currentDate = useCurrentDate();
@@ -32,7 +31,6 @@ export default function Home() {
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [isWidgetOpen, setIsWidgetOpen] = useState(false);
 
   // Layout View preference (Grid, Compact, Timeline)
   const [layoutView, setLayoutView] = useState<LayoutView>(() => {
@@ -199,7 +197,6 @@ export default function Home() {
           totalCount={people.length}
           onAddPerson={handleOpenAdd}
           onOpenShare={() => setIsShareOpen(true)}
-          onOpenWidget={() => setIsWidgetOpen(true)}
         />
 
         {!isHydrated ? (
@@ -291,14 +288,6 @@ export default function Home() {
         onClose={() => setIsShareOpen(false)}
         people={people}
         onImportFromFile={handleImportFromFile}
-      />
-
-      {/* Home Screen Widgets Modal */}
-      <WidgetModal
-        isOpen={isWidgetOpen}
-        onClose={() => setIsWidgetOpen(false)}
-        people={people}
-        currentDate={currentDate}
       />
 
       {/* Import Shared Link Modal */}

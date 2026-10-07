@@ -24,24 +24,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "widgets": [
-    {
-      "name": "AgeBoard Upcoming Birthdays",
-      "short_name": "AgeBoard Widget",
-      "description": "Keep family ages and upcoming birthdays right on your home screen",
-      "tag": "ageboard-upcoming",
-      "template": "/widget",
-      "ms_ac_template": "/widget",
-      "data": "/",
-      "type": "text/html",
-      "screenshots": [
-        {
-          "src": "/icon-512.png",
-          "sizes": "512x512",
-          "label": "AgeBoard Widget"
-        }
-      ]
-    }
   ]
 }

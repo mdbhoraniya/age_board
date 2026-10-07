@@ -11,12 +11,15 @@ type ShareModalProps = {
   onImportFromFile: (imported: Person[]) => void;
 };
 
+type ShareRecipient = 'family' | 'unknown';
+
 export const ShareModal: React.FC<ShareModalProps> = ({
   isOpen,
   onClose,
   people,
   onImportFromFile,
 }) => {
+  const [recipient, setRecipient] = useState<ShareRecipient>('family');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [copied, setCopied] = useState(false);
   const [canNativeShare] = useState<boolean>(() => {
@@ -37,35 +40,46 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Generate share link
+  // Generate share link based on recipient type
   const groupFilter = selectedGroup === 'all' ? undefined : selectedGroup;
   const filteredCount = groupFilter
     ? people.filter((p) => p.group === groupFilter).length
     : people.length;
 
-  const encodedPayload = encodeShareData(people, groupFilter);
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const shareUrl = `${origin}/?import=${encodedPayload}`;
+  const encodedPayload = encodeShareData(people, groupFilter);
+  const familyShareUrl = `${origin}/?import=${encodedPayload}`;
+  const unknownShareUrl = `${origin}/`;
+
+  const activeShareUrl = recipient === 'family' ? familyShareUrl : unknownShareUrl;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(activeShareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
       // Fallback
-      prompt('Copy this link:', shareUrl);
+      prompt('Copy this link:', activeShareUrl);
     }
   };
 
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'AgeBoard Family Ages',
-          text: `Here are the family member details on AgeBoard (${filteredCount} people). Open the link to see everyone's current age:`,
-          url: shareUrl,
-        });
+        if (recipient === 'family') {
+          await navigator.share({
+            title: 'AgeBoard Family Ages',
+            text: `Here are our family member details on AgeBoard (${filteredCount} people). Open the link to see everyone's current age:`,
+            url: familyShareUrl,
+          });
+        } else {
+          await navigator.share({
+            title: 'AgeBoard - Age Tracker',
+            text: "Check out AgeBoard! A simple, 100% private age tracker where you can track everyone's ages and upcoming birthdays. Try it here:",
+            url: unknownShareUrl,
+          });
+        }
       } catch (err) {
         // User cancelled or not supported
         console.log('Share dismissed', err);
@@ -136,10 +150,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               id="share-modal-title"
               className="text-xl font-bold tracking-tight text-slate-900 dark:text-white"
             >
-              Share Family Details
+              Share AgeBoard
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Send a 1-click link to your brother or family so they don&apos;t have to enter details again
+              {recipient === 'family'
+                ? "Send a 1-click link to family so they don't have to enter details again"
+                : 'Share a clean link so an unknown person or friend can enter their own data'}
             </p>
           </div>
           <button
@@ -153,62 +169,159 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         </div>
 
         <div className="mt-5 space-y-5">
-          {/* Group selector */}
-          {groups.length > 0 && (
-            <div>
-              <label
-                htmlFor="share-group-select"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
-              >
-                Select what to share:
-              </label>
-              <select
-                id="share-group-select"
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
-              >
-                <option value="all">🌟 All Groups ({people.length} people)</option>
-                {groups.map((g) => {
-                  const count = people.filter((p) => p.group === g).length;
-                  return (
-                    <option key={g} value={g}>
-                      📁 {g} ({count} {count === 1 ? 'person' : 'people'})
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          )}
-
-          {/* Share Link Preview & Actions */}
+          {/* Recipient Selection Toggle */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-              Shareable 1-Click Link
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+              Share With:
             </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={shareUrl}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 px-3.5 py-2 text-xs font-mono text-slate-600 dark:text-slate-300 select-all truncate"
-              />
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60">
               <button
                 type="button"
-                onClick={handleCopy}
-                className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                  copied
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                onClick={() => {
+                  setRecipient('family');
+                  setCopied(false);
+                }}
+                className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+                  recipient === 'family'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {copied ? '✓ Copied!' : 'Copy Link'}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base">👨‍👩‍👧‍👦</span>
+                  <span className="font-bold">Family Members</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-80 mt-0.5">
+                  Pre-filled with your data
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRecipient('unknown');
+                  setCopied(false);
+                }}
+                className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+                  recipient === 'unknown'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base">👤</span>
+                  <span className="font-bold">Unknown Person</span>
+                </div>
+                <span className="text-[10px] font-normal opacity-80 mt-0.5">
+                  Clean link for their own data
+                </span>
               </button>
             </div>
-            <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-              When opened, the receiver can import all {filteredCount} {filteredCount === 1 ? 'person' : 'people'} with one click.
-            </p>
           </div>
+
+          {/* Recipient-specific content */}
+          {recipient === 'family' ? (
+            <>
+              {/* Group selector */}
+              {groups.length > 0 && (
+                <div>
+                  <label
+                    htmlFor="share-group-select"
+                    className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                  >
+                    Select what to share:
+                  </label>
+                  <select
+                    id="share-group-select"
+                    value={selectedGroup}
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
+                  >
+                    <option value="all">🌟 All Groups ({people.length} people)</option>
+                    {groups.map((g) => {
+                      const count = people.filter((p) => p.group === g).length;
+                      return (
+                        <option key={g} value={g}>
+                          📁 {g} ({count} {count === 1 ? 'person' : 'people'})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
+              {/* Share Link Preview & Actions for Family */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Shareable 1-Click Link
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={familyShareUrl}
+                    className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 px-3.5 py-2 text-xs font-mono text-slate-600 dark:text-slate-300 select-all truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                      copied
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    {copied ? '✓ Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  When opened, family members can import all {filteredCount} {filteredCount === 1 ? 'person' : 'people'} with one click.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Privacy protection notice for Unknown Person */}
+              <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/80 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
+                <span className="text-base shrink-0 mt-0.5">🔒</span>
+                <div>
+                  <span className="font-semibold block">100% Private & Clean</span>
+                  <span className="text-[11px] opacity-90 leading-relaxed block mt-0.5">
+                    None of your saved family members or birth dates will be shared. The recipient will see a clean board where they can enter their own data.
+                  </span>
+                </div>
+              </div>
+
+              {/* Clean App Link */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Clean App Link (No personal data included)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={unknownShareUrl}
+                    className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 px-3.5 py-2 text-xs font-mono text-slate-600 dark:text-slate-300 select-all truncate"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                      copied
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    {copied ? '✓ Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  Share this link so an unknown person or friend can start tracking their own family and friends.
+                </p>
+              </div>
+            </>
+          )}
 
           {/* Native Mobile Share Button (WhatsApp, Messages, etc) */}
           {canNativeShare && (
@@ -219,7 +332,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
               >
                 <span>📲</span>
-                <span>Send via WhatsApp / Message / Share Sheet</span>
+                <span>
+                  {recipient === 'family'
+                    ? 'Send to Family via WhatsApp / Message'
+                    : 'Invite via WhatsApp / Message'}
+                </span>
               </button>
             </div>
           )}
