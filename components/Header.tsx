@@ -7,6 +7,8 @@ type HeaderProps = {
   onAddPerson: () => void;
   onOpenShare: () => void;
   onOpenCompare?: () => void;
+  expiryAlertCount?: number;
+  onOpenExpiryAlerts?: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
 };
@@ -16,6 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   onAddPerson,
   onOpenShare,
   onOpenCompare,
+  expiryAlertCount = 0,
+  onOpenExpiryAlerts,
   isDarkMode,
   onToggleTheme,
 }) => {
@@ -64,6 +68,22 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-base leading-none">{isDarkMode ? '☀️' : '🌙'}</span>
             <span className="hidden sm:inline">{isDarkMode ? 'Light' : 'Dark'}</span>
           </button>
+
+          {/* Expiry Alerts Button */}
+          {expiryAlertCount > 0 && onOpenExpiryAlerts && (
+            <button
+              type="button"
+              onClick={onOpenExpiryAlerts}
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2.5 text-sm font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 active:scale-98 transition-all shadow-xs"
+              title={`${expiryAlertCount} document${expiryAlertCount === 1 ? '' : 's'} need attention`}
+            >
+              <span>🚨</span>
+              <span className="hidden sm:inline">Alerts</span>
+              <span className="rounded-full bg-rose-600 text-white px-1.5 py-0.2 text-[10px] font-black">
+                {expiryAlertCount}
+              </span>
+            </button>
+          )}
 
           {/* Age Comparison Tool Button */}
           {totalCount >= 2 && onOpenCompare && (

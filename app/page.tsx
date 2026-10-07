@@ -23,9 +23,13 @@ import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
 import { DocumentVaultModal } from '@/components/DocumentVaultModal';
 import { AgeComparisonModal } from '@/components/AgeComparisonModal';
+import { ExpiringDocsBanner } from '@/components/ExpiringDocsBanner';
+import { ExpiringDocsDashboardModal } from '@/components/ExpiringDocsDashboardModal';
 import { PersonDocument } from '@/types/document';
 import {
   useDocumentCounts,
+  useAllDocuments,
+  getExpiringDocumentsSummary,
   deleteDocumentsForPerson,
   importDocumentsWithMapping,
 } from '@/lib/documentStorage';
@@ -34,6 +38,7 @@ export default function Home() {
   const currentDate = useCurrentDate();
   const { people, isHydrated } = usePeople();
   const documentCounts = useDocumentCounts();
+  const { documents: allDocuments } = useAllDocuments();
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -42,6 +47,13 @@ export default function Home() {
   const [documentPerson, setDocumentPerson] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isExpiryDashboardOpen, setIsExpiryDashboardOpen] = useState(false);
+
+  // Expiring documents summary
+  const expirySummary = useMemo(
+    () => getExpiringDocumentsSummary(allDocuments, people, currentDate),
+    [allDocuments, people, currentDate]
+  );
 
   // Light / Dark mode preference
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -255,9 +267,19 @@ export default function Home() {
           onAddPerson={handleOpenAdd}
           onOpenShare={() => setIsShareOpen(true)}
           onOpenCompare={() => setIsCompareOpen(true)}
+          expiryAlertCount={expirySummary.totalAlerts}
+          onOpenExpiryAlerts={() => setIsExpiryDashboardOpen(true)}
           isDarkMode={isDarkMode}
           onToggleTheme={handleToggleTheme}
         />
+
+        {/* Expiring Documents Alert Banner */}
+        {people.length > 0 && (
+          <ExpiringDocsBanner
+            summary={expirySummary}
+            onOpenDashboard={() => setIsExpiryDashboardOpen(true)}
+          />
+        )}
 
         {!isHydrated ? (
           // Skeleton loading during hydration
@@ -378,6 +400,14 @@ export default function Home() {
         onClose={() => setIsCompareOpen(false)}
         people={people}
         currentDate={currentDate}
+      />
+
+      {/* Document Expiry Alerts Dashboard Modal */}
+      <ExpiringDocsDashboardModal
+        isOpen={isExpiryDashboardOpen}
+        onClose={() => setIsExpiryDashboardOpen(false)}
+        summary={expirySummary}
+        onOpenPersonVault={(person) => setDocumentPerson(person)}
       />
     </div>
   );

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/age.test.ts tests/storage.test.ts tests/integration.test.ts tests/document.test.ts tests/theme.test.ts tests/comparison.test.ts"
+    "test": "tsx --test tests/age.test.ts tests/storage.test.ts tests/integration.test.ts tests/document.test.ts tests/theme.test.ts tests/comparison.test.ts tests/expiry.test.ts"
   },
   "dependencies": {
     "next": "16.3.7",

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PersonDocument, DocumentCategory, DOCUMENT_CATEGORIES } from '@/types/document';
+import { Person } from '@/types/person';
+import { ExpiringDocumentItem, ExpiryDashboardSummary } from '@/types/expiry';
 
 const DB_NAME = 'ageboard_vault_v1';
 const DB_VERSION = 1;
@@ -334,5 +336,98 @@ export function useDocumentCounts(): Record<string, number> {
   }, []);
 
   return counts;
+}
+
+/**
+ * React hook that returns all reactive documents across all people.
+ */
+export function useAllDocuments(): { documents: PersonDocument[]; isLoading: boolean } {
+  const [documents, setDocuments] = useState<PersonDocument[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchDocs = async () => {
+      const data = await getAllDocuments();
+      if (mounted) {
+        setDocuments(data);
+        setIsLoading(false);
+      }
+    };
+
+    fetchDocs();
+
+    const handleChange = () => {
+      fetchDocs();
+    };
+
+    window.addEventListener(CHANGE_EVENT, handleChange);
+    return () => {
+      mounted = false;
+      window.removeEventListener(CHANGE_EVENT, handleChange);
+    };
+  }, []);
+
+  return { documents, isLoading };
+}
+
+/**
+ * Categorizes and sorts all documents that have expiry dates into expired, expiring soon, and upcoming.
+ */
+export function getExpiringDocumentsSummary(
+  documents: PersonDocument[],
+  people: Person[],
+  refDate: Date = new Date()
+): ExpiryDashboardSummary {
+  const peopleMap = new Map<string, Person>();
+  people.forEach((p) => peopleMap.set(p.id, p));
+
+  const expired: ExpiringDocumentItem[] = [];
+  const expiringSoon: ExpiringDocumentItem[] = [];
+  const upcoming: ExpiringDocumentItem[] = [];
+  let totalWithExpiry = 0;
+
+  for (const doc of documents) {
+    if (!doc.expiryDate || !doc.expiryDate.trim()) continue;
+
+    const person = peopleMap.get(doc.personId);
+    if (!person) continue;
+
+    totalWithExpiry++;
+    const expiryStatus = getExpiryStatus(doc.expiryDate, refDate);
+    const daysRemaining = expiryStatus.daysRemaining ?? 0;
+
+    const item: ExpiringDocumentItem = {
+      document: doc,
+      person,
+      expiryStatus,
+      daysRemaining,
+    };
+
+    if (expiryStatus.status === 'expired') {
+      expired.push(item);
+    } else if (expiryStatus.status === 'expiring_soon') {
+      expiringSoon.push(item);
+    } else if (expiryStatus.status === 'valid' && daysRemaining <= 180) {
+      upcoming.push(item);
+    }
+  }
+
+  // Sort expired by daysRemaining ascending (most overdue first: e.g. -60, -10, -1)
+  expired.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+  // Sort expiring soon by daysRemaining ascending (closest to expiry first: 0, 1, 10, 45)
+  expiringSoon.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+  // Sort upcoming by daysRemaining ascending
+  upcoming.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+  return {
+    expired,
+    expiringSoon,
+    upcoming,
+    totalWithExpiry,
+    totalAlerts: expired.length + expiringSoon.length,
+  };
 }
 
