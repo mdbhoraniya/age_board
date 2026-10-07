@@ -15,6 +15,7 @@ import {
   formatFileSize,
   getExpiryStatus,
 } from '@/lib/documentStorage';
+import { PdfViewer } from './PdfViewer';
 
 type DocumentVaultModalProps = {
   isOpen: boolean;
@@ -713,26 +714,8 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
             {/* Preview Body */}
             <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-100 dark:bg-slate-950">
               {previewDoc.fileType === 'application/pdf' ? (
-                <div className="w-full h-[70vh] flex flex-col">
-                  <object
-                    data={previewDoc.dataUrl}
-                    type="application/pdf"
-                    className="w-full h-full rounded-xl"
-                  >
-                    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                      <span className="text-4xl mb-2">📄</span>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        PDF preview not supported in this browser view.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(previewDoc)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white"
-                      >
-                        Download PDF to View
-                      </button>
-                    </div>
-                  </object>
+                <div className="w-full h-[72vh] flex flex-col">
+                  <PdfViewer dataUrl={previewDoc.dataUrl} title={previewDoc.title} />
                 </div>
               ) : (
                 <img
