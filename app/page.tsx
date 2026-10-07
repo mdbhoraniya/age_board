@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Person, SortOption, LayoutView } from '@/types/person';
 import {
   usePeople,
@@ -22,6 +22,8 @@ import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
 import { DocumentVaultModal } from '@/components/DocumentVaultModal';
+import { ThemeSelectorModal } from '@/components/ThemeSelectorModal';
+import { BgThemeId, BG_THEMES } from '@/types/theme';
 import { PersonDocument } from '@/types/document';
 import {
   useDocumentCounts,
@@ -40,6 +42,51 @@ export default function Home() {
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
   const [documentPerson, setDocumentPerson] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+
+  // Background Theme & Custom Color preference
+  const [bgTheme, setBgTheme] = useState<BgThemeId>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ageboard_bg_theme');
+      if (saved && (BG_THEMES.some((t) => t.id === saved) || saved === 'custom')) {
+        return saved as BgThemeId;
+      }
+    }
+    return 'default';
+  });
+
+  const [customBgColor, setCustomBgColor] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ageboard_custom_bg_color') || '#0f172a';
+    }
+    return '#0f172a';
+  });
+
+  // Sync custom background color to body to prevent rubber-banding letterboxing
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (bgTheme === 'custom') {
+      document.body.style.backgroundColor = customBgColor;
+    } else {
+      document.body.style.backgroundColor = '';
+    }
+  }, [bgTheme, customBgColor]);
+
+  const handleSelectTheme = (themeId: BgThemeId) => {
+    setBgTheme(themeId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ageboard_bg_theme', themeId);
+    }
+  };
+
+  const handleSetCustomBgColor = (color: string) => {
+    setCustomBgColor(color);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ageboard_custom_bg_color', color);
+    }
+  };
+
+  const currentThemeObj = BG_THEMES.find((t) => t.id === bgTheme);
 
   // Layout View preference (Grid, Compact, Timeline)
   const [layoutView, setLayoutView] = useState<LayoutView>(() => {
@@ -220,12 +267,22 @@ export default function Home() {
   }, [people, selectedGroup, searchQuery, sortOption, currentDate]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div
+      className={`flex min-h-screen flex-col text-slate-900 dark:text-slate-100 transition-colors duration-300 ${
+        bgTheme === 'custom'
+          ? ''
+          : currentThemeObj
+          ? `${currentThemeObj.lightClass} ${currentThemeObj.darkClass}`
+          : 'bg-slate-50 dark:bg-slate-950'
+      }`}
+      style={bgTheme === 'custom' ? { backgroundColor: customBgColor } : undefined}
+    >
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <Header
           totalCount={people.length}
           onAddPerson={handleOpenAdd}
           onOpenShare={() => setIsShareOpen(true)}
+          onOpenTheme={() => setIsThemeOpen(true)}
         />
 
         {!isHydrated ? (
@@ -340,6 +397,16 @@ export default function Home() {
           onConfirmReplace={handleConfirmReplace}
         />
       )}
+
+      {/* Background Color & Theme Selector Modal */}
+      <ThemeSelectorModal
+        isOpen={isThemeOpen}
+        onClose={() => setIsThemeOpen(false)}
+        currentTheme={bgTheme}
+        customBgColor={customBgColor}
+        onSelectTheme={handleSelectTheme}
+        onSetCustomBgColor={handleSetCustomBgColor}
+      />
     </div>
   );
 }
