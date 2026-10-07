@@ -1,4 +1,5 @@
-import { AgeResult, BirthdayInfo, GenerationInfo } from '@/types/person';
+import { AgeResult, BirthdayInfo, GenerationInfo, Person } from '@/types/person';
+import { AgeDifference, GroupAgeStats } from '@/types/comparison';
 
 /**
  * Checks if a given year is a leap year.
@@ -386,5 +387,175 @@ export function getGeneration(dateOfBirth: string): GenerationInfo | null {
     colorClass: 'text-slate-700 dark:text-slate-300',
     bgClass: 'bg-slate-100 dark:bg-slate-800',
     borderClass: 'border-slate-200 dark:border-slate-700',
+  };
+}
+
+/**
+ * Calculates calendar-accurate difference between two people's ages.
+ */
+export function calculateAgeDifference(
+  personA: Person,
+  personB: Person,
+  currentDate: Date = new Date()
+): AgeDifference {
+  const partsA = parseDateParts(personA.dateOfBirth);
+  const partsB = parseDateParts(personB.dateOfBirth);
+
+  if (!partsA || !partsB) {
+    return {
+      isSameDay: true,
+      olderPerson: personA,
+      youngerPerson: personB,
+      years: 0,
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      totalWeeks: 0,
+      remainingDays: 0,
+      formattedDifference: '0 days',
+      olderBirthDate: personA.dateOfBirth,
+      youngerBirthDate: personB.dateOfBirth,
+      olderAgeWhenYoungerBorn: '0 days',
+      historicalMilestoneDate: null,
+      ratioMultiplier: 1.0,
+    };
+  }
+
+  const midA = Date.UTC(partsA[0], partsA[1] - 1, partsA[2]);
+  const midB = Date.UTC(partsB[0], partsB[1] - 1, partsB[2]);
+
+  if (midA === midB) {
+    return {
+      isSameDay: true,
+      olderPerson: personA,
+      youngerPerson: personB,
+      years: 0,
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      totalWeeks: 0,
+      remainingDays: 0,
+      formattedDifference: 'Same age (born on the exact same day)',
+      olderBirthDate: personA.dateOfBirth,
+      youngerBirthDate: personB.dateOfBirth,
+      olderAgeWhenYoungerBorn: 'Same day',
+      historicalMilestoneDate: null,
+      ratioMultiplier: 1.0,
+    };
+  }
+
+  const isAOlder = midA < midB;
+  const older = isAOlder ? personA : personB;
+  const younger = isAOlder ? personB : personA;
+  const olderMid = isAOlder ? midA : midB;
+  const youngerMid = isAOlder ? midB : midA;
+  const olderParts = isAOlder ? partsA : partsB;
+  const youngerParts = isAOlder ? partsB : partsA;
+
+  // Age of older person on the exact calendar day younger was born
+  const youngerBirthDateObj = new Date(youngerParts[0], youngerParts[1] - 1, youngerParts[2]);
+  const gapAge = calculateAge(older.dateOfBirth, youngerBirthDateObj);
+
+  const totalDays = Math.max(0, Math.floor((youngerMid - olderMid) / (1000 * 60 * 60 * 24)));
+  const totalWeeks = Math.floor(totalDays / 7);
+  const remainingDays = totalDays % 7;
+  const formattedDifference = formatAge(gapAge);
+
+  // Ratio multiplier
+  const ageOlder = calculateAge(older.dateOfBirth, currentDate);
+  const ageYounger = calculateAge(younger.dateOfBirth, currentDate);
+  let ratioMultiplier: number | null = null;
+  if (ageYounger.totalDays > 0) {
+    ratioMultiplier = Math.round((ageOlder.totalDays / ageYounger.totalDays) * 10) / 10;
+  }
+
+  // Historical date when older was younger's current age
+  let historicalMilestoneDate: string | null = null;
+  if (ageYounger.totalDays > 0) {
+    const milestoneDate = new Date(olderParts[0], olderParts[1] - 1, olderParts[2]);
+    milestoneDate.setFullYear(milestoneDate.getFullYear() + ageYounger.years);
+    milestoneDate.setMonth(milestoneDate.getMonth() + ageYounger.months);
+    milestoneDate.setDate(milestoneDate.getDate() + ageYounger.days);
+
+    const mYear = milestoneDate.getFullYear();
+    const mMonth = String(milestoneDate.getMonth() + 1).padStart(2, '0');
+    const mDay = String(milestoneDate.getDate()).padStart(2, '0');
+    historicalMilestoneDate = formatDateDisplay(`${mYear}-${mMonth}-${mDay}`);
+  }
+
+  return {
+    isSameDay: false,
+    olderPerson: older,
+    youngerPerson: younger,
+    years: gapAge.years,
+    months: gapAge.months,
+    days: gapAge.days,
+    totalDays,
+    totalWeeks,
+    remainingDays,
+    formattedDifference,
+    olderBirthDate: older.dateOfBirth,
+    youngerBirthDate: younger.dateOfBirth,
+    olderAgeWhenYoungerBorn: formattedDifference,
+    historicalMilestoneDate,
+    ratioMultiplier,
+  };
+}
+
+/**
+ * Calculates aggregate age statistics across a group of people.
+ */
+export function calculateGroupAgeStats(
+  people: Person[],
+  currentDate: Date = new Date()
+): GroupAgeStats | null {
+  if (!people || people.length < 2) return null;
+
+  // Sort descending by age (earliest birthdate first)
+  const sorted = [...people].sort((a, b) => {
+    const pA = parseDateParts(a.dateOfBirth);
+    const pB = parseDateParts(b.dateOfBirth);
+    const tA = pA ? Date.UTC(pA[0], pA[1] - 1, pA[2]) : 0;
+    const tB = pB ? Date.UTC(pB[0], pB[1] - 1, pB[2]) : 0;
+    return tA - tB;
+  });
+
+  const oldestPerson = sorted[0];
+  const youngestPerson = sorted[sorted.length - 1];
+  const spanDiff = calculateAgeDifference(oldestPerson, youngestPerson, currentDate);
+
+  const ages = people.map((p) => calculateAge(p.dateOfBirth, currentDate));
+  const totalDays = ages.reduce((sum, a) => sum + a.totalDays, 0);
+  const averageDays = Math.round(totalDays / people.length);
+
+  const avgYears = Math.floor(averageDays / 365.2425);
+  const remDays = averageDays - Math.floor(avgYears * 365.2425);
+  const avgMonths = Math.floor(remDays / 30.4375);
+  const averageAgeFormatted = avgYears > 0 ? `${avgYears}y ${avgMonths}m` : `${avgMonths}m`;
+
+  // Median calculation
+  const sortedDays = [...ages].map((a) => a.totalDays).sort((a, b) => a - b);
+  const midIndex = Math.floor(sortedDays.length / 2);
+  const medianDays =
+    sortedDays.length % 2 !== 0
+      ? sortedDays[midIndex]
+      : Math.round((sortedDays[midIndex - 1] + sortedDays[midIndex]) / 2);
+
+  const medYears = Math.floor(medianDays / 365.2425);
+  const medRemDays = medianDays - Math.floor(medYears * 365.2425);
+  const medMonths = Math.floor(medRemDays / 30.4375);
+  const medianAgeFormatted = medYears > 0 ? `${medYears}y ${medMonths}m` : `${medMonths}m`;
+
+  return {
+    totalPeople: people.length,
+    averageAgeFormatted,
+    averageDays,
+    medianAgeFormatted,
+    oldestPerson,
+    youngestPerson,
+    spanYears: spanDiff.years,
+    spanMonths: spanDiff.months,
+    spanDays: spanDiff.days,
+    spanFormatted: spanDiff.formattedDifference,
   };
 }

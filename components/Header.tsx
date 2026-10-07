@@ -6,6 +6,7 @@ type HeaderProps = {
   totalCount: number;
   onAddPerson: () => void;
   onOpenShare: () => void;
+  onOpenCompare?: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
 };
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalCount,
   onAddPerson,
   onOpenShare,
+  onOpenCompare,
   isDarkMode,
   onToggleTheme,
 }) => {
@@ -62,6 +64,19 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-base leading-none">{isDarkMode ? '☀️' : '🌙'}</span>
             <span className="hidden sm:inline">{isDarkMode ? 'Light' : 'Dark'}</span>
           </button>
+
+          {/* Age Comparison Tool Button */}
+          {totalCount >= 2 && onOpenCompare && (
+            <button
+              type="button"
+              onClick={onOpenCompare}
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
+              title="Compare Ages & Family Difference"
+            >
+              <span>⚖️</span>
+              <span className="hidden sm:inline">Compare</span>
+            </button>
+          )}
 
           {totalCount > 0 && (
             <button

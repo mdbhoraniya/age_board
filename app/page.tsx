@@ -22,6 +22,7 @@ import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
 import { DocumentVaultModal } from '@/components/DocumentVaultModal';
+import { AgeComparisonModal } from '@/components/AgeComparisonModal';
 import { PersonDocument } from '@/types/document';
 import {
   useDocumentCounts,
@@ -40,6 +41,7 @@ export default function Home() {
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
   const [documentPerson, setDocumentPerson] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   // Light / Dark mode preference
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -252,6 +254,7 @@ export default function Home() {
           totalCount={people.length}
           onAddPerson={handleOpenAdd}
           onOpenShare={() => setIsShareOpen(true)}
+          onOpenCompare={() => setIsCompareOpen(true)}
           isDarkMode={isDarkMode}
           onToggleTheme={handleToggleTheme}
         />
@@ -368,6 +371,14 @@ export default function Home() {
           onConfirmReplace={handleConfirmReplace}
         />
       )}
+
+      {/* Age Comparison Tool Modal */}
+      <AgeComparisonModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        people={people}
+        currentDate={currentDate}
+      />
     </div>
   );
 }
