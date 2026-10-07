@@ -14,6 +14,8 @@ type PersonListProps = {
   searchQuery: string;
   onEdit: (person: Person) => void;
   onDelete: (person: Person) => void;
+  onOpenDocuments: (person: Person) => void;
+  documentCounts: Record<string, number>;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
 };
@@ -26,6 +28,8 @@ export const PersonList: React.FC<PersonListProps> = ({
   searchQuery,
   onEdit,
   onDelete,
+  onOpenDocuments,
+  documentCounts,
   onMoveUp,
   onMoveDown,
 }) => {
@@ -51,6 +55,8 @@ export const PersonList: React.FC<PersonListProps> = ({
         currentDate={currentDate}
         onEdit={onEdit}
         onDelete={onDelete}
+        onOpenDocuments={onOpenDocuments}
+        documentCounts={documentCounts}
       />
     );
   }
@@ -65,6 +71,8 @@ export const PersonList: React.FC<PersonListProps> = ({
             currentDate={currentDate}
             onEdit={onEdit}
             onDelete={onDelete}
+            onOpenDocuments={onOpenDocuments}
+            documentCount={documentCounts[person.id] || 0}
             showCustomReorder={isCustomSort}
             canMoveUp={index > 0}
             canMoveDown={index < people.length - 1}
@@ -85,6 +93,8 @@ export const PersonList: React.FC<PersonListProps> = ({
           currentDate={currentDate}
           onEdit={onEdit}
           onDelete={onDelete}
+          onOpenDocuments={onOpenDocuments}
+          documentCount={documentCounts[person.id] || 0}
           showCustomReorder={isCustomSort}
           canMoveUp={index > 0}
           canMoveDown={index < people.length - 1}

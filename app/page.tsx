@@ -21,15 +21,19 @@ import { PersonFormModal } from '@/components/PersonFormModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
+import { DocumentVaultModal } from '@/components/DocumentVaultModal';
+import { useDocumentCounts, deleteDocumentsForPerson } from '@/lib/documentStorage';
 
 export default function Home() {
   const currentDate = useCurrentDate();
   const { people, isHydrated } = usePeople();
+  const documentCounts = useDocumentCounts();
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  const [documentPerson, setDocumentPerson] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Layout View preference (Grid, Compact, Timeline)
@@ -117,10 +121,12 @@ export default function Home() {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!personToDelete) return;
-    const updated = people.filter((p) => p.id !== personToDelete.id);
+    const idToDelete = personToDelete.id;
+    const updated = people.filter((p) => p.id !== idToDelete);
     savePeopleToStorage(updated);
+    await deleteDocumentsForPerson(idToDelete);
     setPersonToDelete(null);
   };
 
@@ -241,6 +247,8 @@ export default function Home() {
               searchQuery={searchQuery}
               onEdit={handleOpenEdit}
               onDelete={setPersonToDelete}
+              onOpenDocuments={setDocumentPerson}
+              documentCounts={documentCounts}
               onMoveUp={handleMoveUp}
               onMoveDown={handleMoveDown}
             />
@@ -280,6 +288,14 @@ export default function Home() {
         person={personToDelete}
         onClose={() => setPersonToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Document Vault Modal */}
+      <DocumentVaultModal
+        isOpen={documentPerson !== null}
+        onClose={() => setDocumentPerson(null)}
+        person={documentPerson}
+        currentDate={currentDate}
       />
 
       {/* Share Modal */}
