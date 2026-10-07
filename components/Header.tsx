@@ -6,14 +6,16 @@ type HeaderProps = {
   totalCount: number;
   onAddPerson: () => void;
   onOpenShare: () => void;
-  onOpenTheme: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
 };
 
 export const Header: React.FC<HeaderProps> = ({
   totalCount,
   onAddPerson,
   onOpenShare,
-  onOpenTheme,
+  isDarkMode,
+  onToggleTheme,
 }) => {
   return (
     <header className="pt-8 pb-6 sm:pt-10 sm:pb-8">
@@ -49,15 +51,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Theme / BG Color Picker */}
+          {/* Light / Dark Mode Toggle */}
           <button
             type="button"
-            onClick={onOpenTheme}
-            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
-            title="Change Background Color & Theme"
+            onClick={onToggleTheme}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-98 transition-all shadow-xs"
+            title={isDarkMode ? 'Switch to Light mode' : 'Switch to Dark mode'}
+            aria-label={isDarkMode ? 'Switch to Light mode' : 'Switch to Dark mode'}
           >
-            <span>🎨</span>
-            <span className="hidden sm:inline">Theme</span>
+            <span className="text-base leading-none">{isDarkMode ? '☀️' : '🌙'}</span>
+            <span className="hidden sm:inline">{isDarkMode ? 'Light' : 'Dark'}</span>
           </button>
 
           {totalCount > 0 && (

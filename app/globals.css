@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
@@ -12,17 +14,15 @@
   --accent-light: #eff6ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-gradient: linear-gradient(180deg, #0b0f19 0%, #0f172a 100%);
-    --surface: #1e293b;
-    --surface-border: #334155;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #60a5fa;
-    --accent-light: rgba(59, 130, 246, 0.15);
-  }
+.dark {
+  --bg-gradient: linear-gradient(180deg, #0b0f19 0%, #0f172a 100%);
+  --surface: #1e293b;
+  --surface-border: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-light: rgba(59, 130, 246, 0.15);
 }
 
 body {
