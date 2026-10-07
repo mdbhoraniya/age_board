@@ -9,6 +9,7 @@ import {
 } from '@/types/document';
 import {
   saveDocument,
+  updateDocument,
   getDocumentsForPerson,
   deleteDocument,
   generateDocumentId,
@@ -16,6 +17,7 @@ import {
   getExpiryStatus,
 } from '@/lib/documentStorage';
 import { PdfViewer } from './PdfViewer';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 type DocumentVaultModalProps = {
   isOpen: boolean;
@@ -24,7 +26,7 @@ type DocumentVaultModalProps = {
   currentDate: Date;
 };
 
-type ActiveTab = 'list' | 'upload';
+type ActiveTab = 'list' | 'upload' | 'edit';
 
 export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
   isOpen,
@@ -50,6 +52,21 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
 
   // Preview modal state
   const [previewDoc, setPreviewDoc] = useState<PersonDocument | null>(null);
+
+  // Edit document state
+  const [editingDoc, setEditingDoc] = useState<PersonDocument | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState<DocumentCategory>('birth_certificate');
+  const [editExpiryDate, setEditExpiryDate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editReplacementFile, setEditReplacementFile] = useState<File | null>(null);
+  const [editReplacementPreview, setEditReplacementPreview] = useState<string | null>(null);
+  const [isEditingSaving, setIsEditingSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Deletion state
+  const [docToDelete, setDocToDelete] = useState<PersonDocument | null>(null);
 
   // Load documents when person or isOpen changes
   useEffect(() => {
@@ -207,12 +224,97 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
     }
   };
 
-  const handleDelete = async (docId: string, docTitle: string) => {
-    if (window.confirm(`Are you sure you want to delete "${docTitle}"?`)) {
-      await deleteDocument(docId);
+  const handleStartEdit = (doc: PersonDocument) => {
+    setEditingDoc(doc);
+    setEditTitle(doc.title);
+    setEditCategory(doc.category);
+    setEditExpiryDate(doc.expiryDate || '');
+    setEditNotes(doc.notes || '');
+    setEditReplacementFile(null);
+    setEditReplacementPreview(null);
+    setEditError(null);
+    setActiveTab('edit');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDoc(null);
+    setEditReplacementFile(null);
+    setEditReplacementPreview(null);
+    setEditError(null);
+    setActiveTab('list');
+  };
+
+  const handleReplacementFileSelection = (file: File) => {
+    setEditReplacementFile(file);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => setEditReplacementPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setEditReplacementPreview(null);
+    }
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDoc || !person) return;
+    if (!editTitle.trim()) {
+      setEditError('Document title is required');
+      return;
+    }
+
+    setIsEditingSaving(true);
+    setEditError(null);
+
+    try {
+      let dataUrl = editingDoc.dataUrl;
+      let fileName = editingDoc.fileName;
+      let fileSize = editingDoc.fileSize;
+      let fileType = editingDoc.fileType;
+
+      if (editReplacementFile) {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read replacement file'));
+          reader.readAsDataURL(editReplacementFile);
+        });
+        fileName = editReplacementFile.name;
+        fileSize = editReplacementFile.size;
+        fileType = editReplacementFile.type;
+      }
+
+      const updatedDoc: PersonDocument = {
+        ...editingDoc,
+        title: editTitle.trim(),
+        category: editCategory,
+        expiryDate: editExpiryDate.trim() || undefined,
+        notes: editNotes.trim() || undefined,
+        dataUrl,
+        fileName,
+        fileSize,
+        fileType,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await updateDocument(updatedDoc);
       const updated = await getDocumentsForPerson(person.id);
       setDocuments(updated);
+      setIsEditingSaving(false);
+      handleCancelEdit();
+    } catch (err) {
+      console.error(err);
+      setEditError('Failed to update document.');
+      setIsEditingSaving(false);
     }
+  };
+
+  const handleConfirmDeleteDoc = async () => {
+    if (!docToDelete || !person) return;
+    await deleteDocument(docToDelete.id);
+    setDocToDelete(null);
+    const updated = await getDocumentsForPerson(person.id);
+    setDocuments(updated);
   };
 
   const handleDownload = (doc: PersonDocument) => {
@@ -304,6 +406,20 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
             >
               <span>➕ Upload Document</span>
             </button>
+
+            {editingDoc && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('edit')}
+                className={`flex items-center gap-1.5 pb-3 px-2 text-sm font-semibold border-b-2 transition-all ${
+                  activeTab === 'edit'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <span>✏️ Edit: {editingDoc.title}</span>
+              </button>
+            )}
           </div>
 
           {/* Content Area */}
@@ -492,6 +608,205 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
                   </button>
                 </div>
               </form>
+            ) : activeTab === 'edit' && editingDoc ? (
+              /* Edit Document Form */
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      Edit Document Details
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Update title, category, expiry date, notes, or replace file
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                {/* Title & Category */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="edit-doc-title"
+                      className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Document Title *
+                    </label>
+                    <input
+                      id="edit-doc-title"
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="e.g. Passport, Health Card"
+                      required
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="edit-doc-category"
+                      className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Document Category
+                    </label>
+                    <select
+                      id="edit-doc-category"
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value as DocumentCategory)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
+                    >
+                      {DOCUMENT_CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Expiry Date & Notes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label
+                        htmlFor="edit-doc-expiry"
+                        className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+                      >
+                        Expiry Date
+                      </label>
+                      {editExpiryDate && (
+                        <button
+                          type="button"
+                          onClick={() => setEditExpiryDate('')}
+                          className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                        >
+                          Clear date
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      id="edit-doc-expiry"
+                      type="date"
+                      value={editExpiryDate}
+                      onChange={(e) => setEditExpiryDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Update expiry date to manage renewal reminders
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="edit-doc-notes"
+                      className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Notes (Optional)
+                    </label>
+                    <input
+                      id="edit-doc-notes"
+                      type="text"
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="e.g. Document number, issuing country"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Attached File & Optional Replacement */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    Attached File
+                  </label>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300 font-bold text-xs">
+                        {editReplacementFile
+                          ? editReplacementFile.name.endsWith('.pdf')
+                            ? 'PDF'
+                            : 'IMG'
+                          : editingDoc.fileType === 'application/pdf'
+                          ? 'PDF'
+                          : 'IMG'}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block font-semibold text-xs text-slate-900 dark:text-white truncate">
+                          {editReplacementFile ? editReplacementFile.name : editingDoc.fileName}
+                        </span>
+                        <span className="block text-[11px] text-slate-400">
+                          {editReplacementFile
+                            ? `New file selected (${formatFileSize(editReplacementFile.size)})`
+                            : `Current file (${formatFileSize(editingDoc.fileSize)})`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={editFileInputRef}
+                        type="file"
+                        accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleReplacementFileSelection(file);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        🔄 {editReplacementFile ? 'Change File' : 'Replace File'}
+                      </button>
+                      {editReplacementFile && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditReplacementFile(null);
+                            setEditReplacementPreview(null);
+                          }}
+                          className="text-xs text-rose-500 hover:underline"
+                        >
+                          Revert
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {editError && (
+                  <div className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300">
+                    ⚠️ {editError}
+                  </div>
+                )}
+
+                {/* Form Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="min-h-[44px] px-4 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isEditingSaving}
+                    className="min-h-[44px] px-5 rounded-xl bg-blue-600 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
+                  >
+                    {isEditingSaving ? 'Saving Changes...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             ) : (
               /* Document List */
               <div>
@@ -642,6 +957,16 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
 
                             <button
                               type="button"
+                              onClick={() => handleStartEdit(doc)}
+                              title="Edit document details"
+                              className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              <span>✏️</span>
+                              <span>Edit</span>
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => handleDownload(doc)}
                               title="Download to device"
                               className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
@@ -652,7 +977,7 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => handleDelete(doc.id, doc.title)}
+                              onClick={() => setDocToDelete(doc)}
                               title="Delete document"
                               className="inline-flex min-h-[36px] items-center justify-center rounded-xl p-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                             >
@@ -669,6 +994,14 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Elegant Delete Confirmation Modal for Documents */}
+      <DeleteConfirmModal
+        isOpen={docToDelete !== null}
+        document={docToDelete}
+        onClose={() => setDocToDelete(null)}
+        onConfirm={handleConfirmDeleteDoc}
+      />
 
       {/* Lightbox / In-app Document Preview Modal */}
       {previewDoc && (

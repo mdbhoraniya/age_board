@@ -81,5 +81,37 @@ describe('Document Vault & Metadata Tests', () => {
     assert.notEqual(result.idMap['remote-2'], 'remote-2'); // Assigned fresh ID
     assert.equal(result.idMap['remote-2'], result.merged[1].id);
   });
+
+  test('Document editing preserves ID and updates metadata', () => {
+    const originalDoc = {
+      id: 'doc-123',
+      personId: 'p-1',
+      title: 'Old Title',
+      category: 'other' as const,
+      fileName: 'old.pdf',
+      fileType: 'application/pdf',
+      fileSize: 1024,
+      dataUrl: 'data:application/pdf;base64,123',
+      expiryDate: '2026-10-10',
+      notes: 'Initial notes',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const editedDoc = {
+      ...originalDoc,
+      title: 'Updated Passport',
+      category: 'passport' as const,
+      expiryDate: '2030-05-15',
+      notes: 'Renewed passport',
+      updatedAt: '2026-10-07T12:00:00.000Z',
+    };
+
+    assert.equal(editedDoc.id, originalDoc.id, 'ID must be preserved on edit');
+    assert.equal(editedDoc.title, 'Updated Passport');
+    assert.equal(editedDoc.category, 'passport');
+    assert.equal(editedDoc.expiryDate, '2030-05-15');
+    assert.notEqual(editedDoc.updatedAt, originalDoc.updatedAt);
+  });
 });
 

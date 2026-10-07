@@ -362,6 +362,7 @@ export default function Home() {
       <DeleteConfirmModal
         isOpen={personToDelete !== null}
         person={personToDelete}
+        documentCount={personToDelete ? (documentCounts[personToDelete.id] || 0) : 0}
         onClose={() => setPersonToDelete(null)}
         onConfirm={handleConfirmDelete}
       />

@@ -137,6 +137,17 @@ export async function saveDocument(doc: PersonDocument): Promise<void> {
 }
 
 /**
+ * Update an existing document with a new updatedAt timestamp.
+ */
+export async function updateDocument(doc: PersonDocument): Promise<void> {
+  const updatedDoc: PersonDocument = {
+    ...doc,
+    updatedAt: new Date().toISOString(),
+  };
+  return saveDocument(updatedDoc);
+}
+
+/**
  * Get all documents for a specific person.
  */
 export async function getDocumentsForPerson(personId: string): Promise<PersonDocument[]> {
