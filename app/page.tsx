@@ -21,15 +21,24 @@ import { PersonFormModal } from '@/components/PersonFormModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { ShareModal } from '@/components/ShareModal';
 import { ImportSharedModal } from '@/components/ImportSharedModal';
+import { DocumentVaultModal } from '@/components/DocumentVaultModal';
+import { PersonDocument } from '@/types/document';
+import {
+  useDocumentCounts,
+  deleteDocumentsForPerson,
+  importDocumentsWithMapping,
+} from '@/lib/documentStorage';
 
 export default function Home() {
   const currentDate = useCurrentDate();
   const { people, isHydrated } = usePeople();
+  const documentCounts = useDocumentCounts();
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  const [documentPerson, setDocumentPerson] = useState<Person | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Layout View preference (Grid, Compact, Timeline)
@@ -117,10 +126,12 @@ export default function Home() {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!personToDelete) return;
-    const updated = people.filter((p) => p.id !== personToDelete.id);
+    const idToDelete = personToDelete.id;
+    const updated = people.filter((p) => p.id !== idToDelete);
     savePeopleToStorage(updated);
+    await deleteDocumentsForPerson(idToDelete);
     setPersonToDelete(null);
   };
 
@@ -169,9 +180,27 @@ export default function Home() {
     handleDismissImport();
   };
 
-  const handleImportFromFile = (importedList: Person[]) => {
-    const { merged } = mergePeople(people, importedList);
+  const handleImportFromFile = async (
+    importedList: Person[],
+    importedDocs?: PersonDocument[]
+  ) => {
+    const { merged, idMap } = mergePeople(people, importedList);
     savePeopleToStorage(merged);
+
+    let docCount = 0;
+    if (importedDocs && importedDocs.length > 0) {
+      docCount = await importDocumentsWithMapping(importedDocs, idMap);
+    }
+
+    if (docCount > 0) {
+      alert(
+        `Successfully restored backup!\n• Added/updated ${importedList.length} family member${importedList.length === 1 ? '' : 's'}\n• Restored ${docCount} attached document${docCount === 1 ? '' : 's'} into your local vault`
+      );
+    } else {
+      alert(
+        `Successfully restored ${importedList.length} family member${importedList.length === 1 ? '' : 's'}.`
+      );
+    }
   };
 
   // Filter & sort list
@@ -241,6 +270,8 @@ export default function Home() {
               searchQuery={searchQuery}
               onEdit={handleOpenEdit}
               onDelete={setPersonToDelete}
+              onOpenDocuments={setDocumentPerson}
+              documentCounts={documentCounts}
               onMoveUp={handleMoveUp}
               onMoveDown={handleMoveDown}
             />
@@ -280,6 +311,14 @@ export default function Home() {
         person={personToDelete}
         onClose={() => setPersonToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Document Vault Modal */}
+      <DocumentVaultModal
+        isOpen={documentPerson !== null}
+        onClose={() => setDocumentPerson(null)}
+        person={documentPerson}
+        currentDate={currentDate}
       />
 
       {/* Share Modal */}

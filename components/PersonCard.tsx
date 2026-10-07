@@ -15,6 +15,8 @@ type PersonCardProps = {
   currentDate: Date;
   onEdit: (person: Person) => void;
   onDelete: (person: Person) => void;
+  onOpenDocuments?: (person: Person) => void;
+  documentCount?: number;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   canMoveUp?: boolean;
@@ -27,6 +29,8 @@ export const PersonCard: React.FC<PersonCardProps> = ({
   currentDate,
   onEdit,
   onDelete,
+  onOpenDocuments,
+  documentCount = 0,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -199,6 +203,26 @@ export const PersonCard: React.FC<PersonCardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5 ml-auto">
+          {/* Documents Vault Button */}
+          <button
+            type="button"
+            onClick={() => onOpenDocuments?.(person)}
+            aria-label={`Documents for ${person.name}`}
+            className={`inline-flex items-center justify-center gap-1 min-h-[38px] px-2.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
+              documentCount > 0
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span>📁</span>
+            <span>Docs</span>
+            {documentCount > 0 && (
+              <span className="rounded-full bg-blue-600 text-white dark:bg-blue-500 px-1.5 py-0.2 text-[10px] font-bold">
+                {documentCount}
+              </span>
+            )}
+          </button>
+
           {/* Edit Button */}
           <button
             type="button"

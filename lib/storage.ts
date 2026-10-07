@@ -283,8 +283,14 @@ export function decodeShareData(encodedStr: string): {
 export function mergePeople(
   existing: Person[],
   incoming: Person[]
-): { merged: Person[]; addedCount: number; updatedCount: number } {
+): {
+  merged: Person[];
+  addedCount: number;
+  updatedCount: number;
+  idMap: Record<string, string>;
+} {
   const merged = [...existing];
+  const idMap: Record<string, string> = {};
   let addedCount = 0;
   let updatedCount = 0;
 
@@ -297,6 +303,7 @@ export function mergePeople(
     );
 
     if (matchIndex >= 0) {
+      idMap[item.id] = merged[matchIndex].id;
       // If matched and incoming has a group while existing doesn't, update the group
       if (item.group && !merged[matchIndex].group) {
         merged[matchIndex] = {
@@ -307,13 +314,15 @@ export function mergePeople(
       }
     } else {
       // Add as new person with fresh ID
+      const newId = generatePersonId();
+      idMap[item.id] = newId;
       merged.push({
         ...item,
-        id: generatePersonId(),
+        id: newId,
       });
       addedCount++;
     }
   }
 
-  return { merged, addedCount, updatedCount };
+  return { merged, addedCount, updatedCount, idMap };
 }

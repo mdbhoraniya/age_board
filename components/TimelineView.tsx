@@ -15,6 +15,8 @@ type TimelineViewProps = {
   currentDate: Date;
   onEdit: (person: Person) => void;
   onDelete: (person: Person) => void;
+  onOpenDocuments?: (person: Person) => void;
+  documentCounts?: Record<string, number>;
 };
 
 const MONTH_NAMES = [
@@ -37,6 +39,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   currentDate,
   onEdit,
   onDelete,
+  onOpenDocuments,
+  documentCounts = {},
 }) => {
   const currentMonthIndex = currentDate.getMonth(); // 0-indexed
 
@@ -194,6 +198,24 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       </span>
 
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onOpenDocuments?.(person)}
+                          aria-label={`Documents for ${person.name}`}
+                          className={`min-h-[34px] px-2 rounded-lg text-xs font-semibold inline-flex items-center gap-1 transition-colors ${
+                            (documentCounts[person.id] || 0) > 0
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <span>📁</span>
+                          <span>Docs</span>
+                          {(documentCounts[person.id] || 0) > 0 && (
+                            <span className="rounded-full bg-blue-600 text-white dark:bg-blue-500 px-1.5 py-0.2 text-[10px] font-bold">
+                              {documentCounts[person.id]}
+                            </span>
+                          )}
+                        </button>
                         <button
                           type="button"
                           onClick={() => onEdit(person)}

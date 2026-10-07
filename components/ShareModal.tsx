@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Person } from '@/types/person';
+import { PersonDocument } from '@/types/document';
 import { encodeShareData, getAllGroups } from '@/lib/storage';
+import { getAllDocuments } from '@/lib/documentStorage';
 
 type ShareModalProps = {
   isOpen: boolean;
   onClose: () => void;
   people: Person[];
-  onImportFromFile: (imported: Person[]) => void;
+  onImportFromFile: (imported: Person[], importedDocs?: PersonDocument[]) => void;
 };
 
 type ShareRecipient = 'family' | 'unknown';
@@ -22,11 +24,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const [recipient, setRecipient] = useState<ShareRecipient>('family');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [copied, setCopied] = useState(false);
+  const [allDocs, setAllDocs] = useState<PersonDocument[]>([]);
+  const [includeDocumentsInExport, setIncludeDocumentsInExport] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [canNativeShare] = useState<boolean>(() => {
     return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   });
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const groups = getAllGroups(people);
+
+  useEffect(() => {
+    if (isOpen) {
+      getAllDocuments().then((docs) => setAllDocs(docs));
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,25 +98,42 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
   };
 
-  const handleExportJson = () => {
-    const exportData = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      people: groupFilter
-        ? people.filter((p) => p.group === groupFilter)
-        : people,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ageboard_backup_${groupFilter ? groupFilter.toLowerCase().replace(/\s+/g, '_') : 'all'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const exportedPeople = groupFilter
+    ? people.filter((p) => p.group === groupFilter)
+    : people;
+  const exportedPeopleIds = new Set(exportedPeople.map((p) => p.id));
+  const relevantDocs = allDocs.filter((d) => exportedPeopleIds.has(d.personId));
+
+  const handleExportJson = async () => {
+    setIsExporting(true);
+    try {
+      const docsToExport = includeDocumentsInExport ? relevantDocs : [];
+      const exportData = {
+        version: docsToExport.length > 0 ? 2 : 1,
+        exportedAt: new Date().toISOString(),
+        includeDocuments: docsToExport.length > 0,
+        people: exportedPeople,
+        documents: docsToExport.length > 0 ? docsToExport : undefined,
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const groupSlug = groupFilter ? groupFilter.toLowerCase().replace(/\s+/g, '_') : 'all';
+      const suffix = docsToExport.length > 0 ? '_with_docs' : '';
+      a.download = `ageboard_backup_${groupSlug}${suffix}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to generate backup file.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,8 +146,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         const text = event.target?.result as string;
         const parsed = JSON.parse(text);
         const list = Array.isArray(parsed?.people) ? parsed.people : Array.isArray(parsed) ? parsed : [];
+        const docsList = Array.isArray(parsed?.documents) ? parsed.documents : undefined;
+
         if (list.length > 0) {
-          onImportFromFile(list);
+          onImportFromFile(list, docsList);
           onClose();
         } else {
           alert('No valid people data found in the selected file.');
@@ -343,21 +373,53 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
           {/* Backup File Options */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2.5">
-              Backup & File Transfer
+            <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Cross-Device Backup & Transfer
             </span>
+
+            {/* Document Bundle Option */}
+            {relevantDocs.length > 0 && (
+              <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 mb-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={includeDocumentsInExport}
+                  onChange={(e) => setIncludeDocumentsInExport(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>📦</span>
+                    <span>Include {relevantDocs.length} uploaded document{relevantDocs.length === 1 ? '' : 's'} in backup</span>
+                  </span>
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300 block mt-0.5 leading-relaxed">
+                    Bundles all PDFs, passport scans, and photos so family members receive these documents on their phones when importing this file.
+                  </span>
+                </div>
+              </label>
+            )}
+
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleExportJson}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors text-center"
+                disabled={isExporting}
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors text-center disabled:opacity-50"
               >
-                💾 Export JSON Backup
+                {isExporting ? (
+                  'Bundling...'
+                ) : (
+                  <span>
+                    💾 Export Backup{' '}
+                    {includeDocumentsInExport && relevantDocs.length > 0
+                      ? `(+ ${relevantDocs.length} Docs)`
+                      : ''}
+                  </span>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors text-center"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors text-center"
               >
                 📥 Import from File
               </button>
@@ -369,6 +431,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 onChange={handleFileChange}
               />
             </div>
+            <p className="mt-1.5 text-[11px] text-slate-400 text-center">
+              Send the exported backup file via WhatsApp, AirDrop, or email to import everything on family members&apos; phones.
+            </p>
           </div>
         </div>
       </div>
