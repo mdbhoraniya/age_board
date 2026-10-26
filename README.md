@@ -23,7 +23,7 @@
   - **Unknown Person**: Share a clean, 100% private link with zero personal data exposed so friends or acquaintances can start tracking their own ages from scratch.
 - **Private Document Vault (IndexedDB)**: Securely attach essential documents per person (Birth Certificates, Passports, National IDs, Health Insurance cards, Vaccine records, etc.) stored 100% locally on your device with interactive in-app preview, one-tap downloads, and expiration date tracking.
 - **Backup & Restore**: Export full family data as `.json` backups and import them anytime on any device.
-- **Progressive Web App (PWA)**: Installable on Android (via Chrome "Add to Home Screen"), iOS (Safari "Add to Home Screen"), and desktop browsers as a standalone application.
+- **Full Offline Support & Progressive Web App (PWA)**: Complete offline capability powered by an intelligent Service Worker (`sw.js`) that caches the app shell, Next.js static bundles, and local PDF renderers. Works seamlessly on planes, subways, or anywhere without internet. Installable on Android, iOS, and desktop browsers.
 - **Responsive Mobile-First Design**: Optimized for 320px, 375px, 430px, tablets, and desktop displays with 44px+ touch targets and dark mode support.
 
 ---

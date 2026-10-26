@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PersonDocument, DocumentCategory, DOCUMENT_CATEGORIES } from '@/types/document';
+import { PersonDocument } from '@/types/document';
 import { Person } from '@/types/person';
 import { ExpiringDocumentItem, ExpiryDashboardSummary } from '@/types/expiry';
 

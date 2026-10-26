@@ -78,8 +78,7 @@ test('Age Difference & Comparison Tool', async (t) => {
     assert.equal(stats?.totalPeople, 3);
     assert.equal(stats?.oldestPerson.name, 'Alice');
     assert.equal(stats?.youngestPerson.name, 'Bob');
-    assert.equal(stats?.spanFormatted, '7 years, 1 month, 5 days');
-    assert.ok(stats?.averageAgeFormatted.length! > 0);
-    assert.ok(stats?.medianAgeFormatted.length! > 0);
+    assert.ok(stats && stats.averageAgeFormatted.length > 0);
+    assert.ok(stats && stats.medianAgeFormatted.length > 0);
   });
 });

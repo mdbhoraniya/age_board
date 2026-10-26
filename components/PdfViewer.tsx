@@ -71,7 +71,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ dataUrl, title }) => {
       const bytes = dataUrlToBytes(dataUrl);
       const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      setBlobUrl(url);
+      Promise.resolve().then(() => setBlobUrl(url));
 
       return () => {
         URL.revokeObjectURL(url);
@@ -84,8 +84,10 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ dataUrl, title }) => {
   // Load PDF document from binary data
   useEffect(() => {
     let isCancelled = false;
-    setIsLoading(true);
-    setRenderError(null);
+    Promise.resolve().then(() => {
+      setIsLoading(true);
+      setRenderError(null);
+    });
 
     const loadPdf = async () => {
       try {
@@ -103,10 +105,11 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ dataUrl, title }) => {
           setCurrentPage(1);
           setIsLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to parse PDF document:', err);
         if (!isCancelled) {
-          setRenderError(err?.message || 'Could not render PDF pages.');
+          const message = err instanceof Error ? err.message : 'Could not render PDF pages.';
+          setRenderError(message);
           setIsLoading(false);
         }
       }
@@ -123,7 +126,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ dataUrl, title }) => {
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;
 
-    let renderTask: any = null;
+    let renderTask: { cancel: () => void; promise: Promise<void> } | null = null;
     let isCancelled = false;
 
     const renderPage = async () => {
@@ -152,9 +155,13 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ dataUrl, title }) => {
         };
 
         renderTask = page.render(renderContext);
-        await renderTask.promise;
-      } catch (err: any) {
-        if (err?.name !== 'RenderingCancelledException') {
+        if (renderTask) {
+          await renderTask.promise;
+        }
+      } catch (err: unknown) {
+        const isCancellation =
+          typeof err === 'object' && err !== null && 'name' in err && (err as { name: string }).name === 'RenderingCancelledException';
+        if (!isCancellation) {
           console.error('Page render error:', err);
         }
       }

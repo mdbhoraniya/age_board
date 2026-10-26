@@ -6,6 +6,7 @@ import {
   generateDocumentId,
 } from '../lib/documentStorage';
 import { DOCUMENT_CATEGORIES } from '../types/document';
+import { mergePeople } from '../lib/storage';
 
 describe('Document Vault & Metadata Tests', () => {
   const refDate = new Date(2026, 9, 7); // 7 Oct 2026
@@ -63,7 +64,6 @@ describe('Document Vault & Metadata Tests', () => {
   });
 
   test('mergePeople generates consistent idMap for document remapping on import', () => {
-    const { mergePeople } = require('../lib/storage');
     const existing = [
       { id: 'local-1', name: 'John Doe', dateOfBirth: '1985-04-12' },
     ];
